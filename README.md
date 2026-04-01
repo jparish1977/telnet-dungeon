@@ -158,9 +158,10 @@ telnet-dungeon/
 - [ ] Better procedural dungeons (themed rooms, traps, secret doors)
 - [ ] Sound cues via terminal bell
 - [ ] Terminal protocol negotiation (TTYPE, MCCP, 256-color)
+- [ ] HTTP status API (JSON game state on a second port for monitoring)
 
 ### v2.0 - Web Frontend (Three.js)
-- [ ] WebSocket protocol layer on game server
+- [ ] WebSocket protocol adapter (same ProtocolAdapter interface as telnet)
 - [ ] JSON game state API (player state, visible tiles, monsters, chat)
 - [ ] Three.js renderer:
   - Actual 3D first-person dungeon (walls, floors, ceilings as geometry)
@@ -172,12 +173,20 @@ telnet-dungeon/
 - [ ] Touch controls for mobile
 - [ ] Cross-play: telnet and web clients in same world
 
-### v3.0 - Full MUD
+### v3.0 - Server Federation
+Each server instance owns a realm (overworld + dungeons). Dungeon entrances become inter-server portals — step in, your character serializes to JSON and transfers to another host. Step out, you're back where you left.
+
+- [ ] Inter-server transfer protocol (character JSON handoff over TCP)
+- [ ] Portal tile type linking to remote servers
+- [ ] Server registry (name, host, port, description)
+- [ ] Seamless return — exit a remote dungeon, land back at the entrance you came from
+- [ ] Cross-server chat / announcements
+
+### v4.0 - Full MUD
 - [ ] Scripting engine for quests/NPCs (Lua or Python)
 - [ ] Guild/clan system
 - [ ] Economy (player shops, auction house)
 - [ ] World persistence (server state snapshots)
-- [ ] Multiple realms/servers
 - [ ] Admin web dashboard
 
 ## Configuration
