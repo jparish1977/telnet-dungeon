@@ -670,8 +670,10 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
             else:
                 if ch in ('`', '.') and above_horizon:
                     bg = theme_sky_bg
-                elif ch in ('.', ':', ',') and not above_horizon:
+                elif ch in ('.', ',') and not above_horizon:
                     bg = theme_ground_bg
+                elif ch == ':' and not above_horizon:
+                    bg = theme_wall_bg
                 elif ch == '#':
                     bg = theme_wall_bg
                 elif ch == '~':
