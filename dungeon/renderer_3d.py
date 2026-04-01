@@ -548,6 +548,25 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
                                 view[lr][lcc] = lch
                                 mob_mask[lr][lcc] = True
 
+    # Draw "at your feet" indicator for the tile you're standing on
+    current_tile = get_tile(px, py)
+    feet_art = {
+        5: ['[$$$]'],       # treasure
+        6: ['{~W~}'],       # fountain
+        3: ['[>>>>]'],      # stairs down
+        4: ['[<<<<]'],      # stairs up
+    }
+    if current_tile in feet_art:
+        sprite = feet_art[current_tile]
+        mid_c = W // 2
+        for si, sline in enumerate(sprite):
+            sr = H - 2 - si
+            sc = mid_c - len(sline) // 2
+            for ci, ch in enumerate(sline):
+                cc = sc + ci
+                if 0 <= sr < H and 0 <= cc < W:
+                    view[sr][cc] = ch
+
     # Fill all empty space with sky/ceiling above horizon, ground below
     horizon = H // 2
 
