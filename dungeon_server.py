@@ -53,6 +53,8 @@ class GameSession:
     # continues to work without changing every call site at once.
 
     async def send(self, text):
+        if '\033[2J' in text:
+            self._framebuffer.clear()
         await self.io.send(text)
 
     async def send_line(self, text=""):

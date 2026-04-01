@@ -1,0 +1,21 @@
+{
+  "id": "quest_niles",
+  "name": "Tales of Niles",
+  "description": "Explore the Niles region.",
+  "entrances": [],
+  "quest_floors": {},
+  "npcs": {},
+  "stages": [
+    {
+      "id": "started",
+      "description": "Begin exploring."
+    },
+    {
+      "id": "complete",
+      "description": "Region explored."
+    }
+  ],
+  "rewards": {
+    "gold": 500
+  }
+}

@@ -5,6 +5,31 @@ import random
 from dungeon.persistence import load_custom_monsters, load_builtin_overrides
 from dungeon.floor import get_floor
 
+# Quest floor ID -> quest floor key mapping
+_QUEST_FLOOR_MAP = {
+    90000: ('bookeater_gyre', 'gyre_1'),
+    90001: ('bookeater_gyre', 'gyre_2'),
+}
+
+
+def _get_quest_floor_monsters(floor_num):
+    """Get monsters defined in quest JSON for a quest floor."""
+    if floor_num not in _QUEST_FLOOR_MAP:
+        return None
+    quest_id, floor_key = _QUEST_FLOOR_MAP[floor_num]
+    try:
+        from dungeon.quests import load_quest
+        quest = load_quest(quest_id)
+        if not quest:
+            return None
+        qfloor = quest.get('quest_floors', {}).get(floor_key, {})
+        monsters = qfloor.get('monsters', [])
+        if monsters:
+            return monsters
+    except Exception:
+        pass
+    return None
+
 # ── Monster definitions ───────────────────────────────────────────
 
 MONSTERS_BY_FLOOR = {
@@ -50,8 +75,15 @@ def get_monsters_for_floor(floor_num):
     if floor_num in MONSTERS_BY_FLOOR:
         return MONSTERS_BY_FLOOR[floor_num] + floor_customs
 
+    # Quest floors (90000+) — check for quest-defined monsters first
+    if floor_num >= 90000:
+        quest_monsters = _get_quest_floor_monsters(floor_num)
+        if quest_monsters:
+            return quest_monsters + floor_customs
+
     base = MONSTERS_BY_FLOOR[2]
-    scale = 1 + (floor_num - 2) * 0.4
+    effective_floor = min(floor_num, 100)  # cap scaling at floor 100
+    scale = 1 + (effective_floor - 2) * 0.4
     scaled = []
     for m in base:
         sm = dict(m)

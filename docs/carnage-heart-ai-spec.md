@@ -10,11 +10,14 @@ A visual-logic behavior editor for monsters and NPCs, inspired by Carnage Heart 
 {
   "name": "Verdant Blight",
   "behavior": [
-    {"if": "hp_pct < 20", "then": ["say 'YOU CANNOT KILL WHAT GROWS ETERNAL'", "heal 15"]},
-    {"if": "player_distance <= 1", "then": ["attack", "poison 30"]},
-    {"if": "player_distance <= 5", "then": ["move_toward_player"]},
-    {"if": "ally_count < 3", "then": ["summon vine_horror"]},
-    {"else": true, "then": ["patrol waypoints"]}
+    {
+      "if": "hp_pct < 20",
+      "then": ["say 'YOU CANNOT KILL WHAT GROWS ETERNAL'", "heal 15"]
+    },
+    { "if": "player_distance <= 1", "then": ["attack", "poison 30"] },
+    { "if": "player_distance <= 5", "then": ["move_toward_player"] },
+    { "if": "ally_count < 3", "then": ["summon vine_horror"] },
+    { "else": true, "then": ["patrol waypoints"] }
   ]
 }
 ```
@@ -75,10 +78,10 @@ A visual-logic behavior editor for monsters and NPCs, inspired by Carnage Heart 
 {
   "name": "Ginger",
   "behavior": [
-    {"if": "has_flag quest_complete", "then": ["dialog complete_dialog"]},
-    {"if": "has_flag hobbles_found", "then": ["dialog hobbles_dialog"]},
-    {"if": "player_distance <= 2", "then": ["dialog start_dialog"]},
-    {"else": true, "then": ["idle"]}
+    { "if": "has_flag quest_complete", "then": ["dialog complete_dialog"] },
+    { "if": "has_flag hobbles_found", "then": ["dialog hobbles_dialog"] },
+    { "if": "player_distance <= 2", "then": ["dialog start_dialog"] },
+    { "else": true, "then": ["idle"] }
   ]
 }
 ```
@@ -95,10 +98,12 @@ A visual-logic behavior editor for monsters and NPCs, inspired by Carnage Heart 
 ## Implementation Plan
 
 ### New modules needed:
+
 - `dungeon/behavior.py` — rule interpreter (parse conditions, evaluate against game state, execute actions)
 - `dungeon/gm/behavior_editor.py` — telnet UI for editing behavior rules
 
 ### Modules to modify:
+
 - `dungeon/monsters.py` — `move_floor_monsters()` checks for behavior rules before hardcoded AI
 - `dungeon/combat.py` — monster combat turns evaluate behavior rules
 - `dungeon/gm/tools.py` — add [B]ehavior option to monster editor

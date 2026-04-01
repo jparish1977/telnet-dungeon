@@ -8,15 +8,17 @@ from dungeon.config import (
 from dungeon.monsters import get_floor_monsters
 
 
-def render_minimap(dungeon, px, py, facing, radius=3, other_players=None, floor_num=0):
-    """Render a small minimap around the player."""
+def render_minimap(dungeon, px, py, facing, radius=3, other_players=None, floor_num=0,
+                   quest_markers=None):
+    """Render a small minimap around the player.
+    quest_markers: list of (x, y, symbol, color_code) for quest entrances/NPCs."""
     lines = []
     dir_arrows = ['^', '>', 'v', '<']
 
     # Build set of other player positions for fast lookup
     player_positions = {}
     if other_players:
-        for name, ox, oy, of in other_players:
+        for name, ox, oy, _of in other_players:
             player_positions[(ox, oy)] = name[0].upper()
 
     # Build monster positions
@@ -24,6 +26,12 @@ def render_minimap(dungeon, px, py, facing, radius=3, other_players=None, floor_
     for mob in get_floor_monsters(floor_num):
         if mob['alive']:
             monster_positions[(mob['x'], mob['y'])] = mob['symbol']
+
+    # Build quest marker positions
+    quest_positions = {}
+    if quest_markers:
+        for qx, qy, qsym, qcol in quest_markers:
+            quest_positions[(qx, qy)] = (qsym, qcol)
 
     for dy in range(-radius, radius + 1):
         row = ""
@@ -33,6 +41,9 @@ def render_minimap(dungeon, px, py, facing, radius=3, other_players=None, floor_
                 row += color(dir_arrows[facing], YELLOW)
             elif (mx, my) in player_positions:
                 row += color(player_positions[(mx, my)], GREEN)
+            elif (mx, my) in quest_positions:
+                qsym, qcol = quest_positions[(mx, my)]
+                row += color(qsym, qcol)
             elif (mx, my) in monster_positions:
                 row += color(monster_positions[(mx, my)], RED)
             elif 0 <= my < len(dungeon) and 0 <= mx < len(dungeon[0]):

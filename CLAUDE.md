@@ -71,6 +71,23 @@ Run `python ~/jp_tools/check.py . --pretty` — should be 0 errors, 0 warnings a
 - WebSocket disconnect doesn't always free the player session (causes "already logged in" lockout until server restart)
 - PvP is auto-fight for the defender — needs real-time cooldown-based combat where both players input simultaneously
 
+## Skills System (Planned)
+
+Two non-combat skill trees:
+- **Crafting**: gather materials from dungeon floors, craft potions/gear/keys at workbenches in towns. Higher skill = better recipes. Quest items can require crafting.
+- **Coding**: program behavior for companions/pets/turrets using the Carnage Heart visual logic editor. Higher skill = more logic blocks, faster cooldowns, smarter AI. Could also hack dungeon traps/doors.
+
+Both should be useful but not mandatory — a pure Fighter can brute-force what a Crafter finesse.
+
+## Quest System Design
+
+- Quests define their own dungeon floors, NPC placements, and entrance locations
+- Entrances can be on the overworld OR inside other dungeon floors
+- **Entrances are invisible unless the player has the quest** (per-player visibility filtering)
+- Quest state stored as `quest_flags` dict on the character save
+- Multiple players with the same quest see the same entrance and can co-op
+- Quest dungeons can be hand-built (custom_floors) or themed procedural
+
 ## Future
 
 - Real-time PvP with cooldown timers (not turn-based, not auto-fight)
@@ -78,5 +95,6 @@ Run `python ~/jp_tools/check.py . --pretty` — should be 0 errors, 0 warnings a
 - Server federation: dungeon entrances as inter-server portals, player handoff via JSON
 - Three.js 3D renderer for web frontend (currently terminal-in-canvas)
 - Carnage Heart-style behavior editor for NPC/monster AI
-- Quest system (Bookeater Gyre quest data exists in quests/)
+- Crafting system with material gathering and recipes
+- Coding skill — program companion AI with visual logic blocks
 - Split `gm/tools.py` (~1000 lines) into sub-modules

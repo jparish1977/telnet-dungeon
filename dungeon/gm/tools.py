@@ -76,6 +76,7 @@ async def gm_menu(session, world):
         await session.send_line(f"  {color('[0]', YELLOW)} List all players")
         if has_char:
             await session.send_line(f"  {color('[F]', YELLOW)} Teleport to floor")
+            await session.send_line(f"  {color('[R]', YELLOW)} Region teleport")
         await session.send_line(f"  {color('[M]', YELLOW)} Monster editor")
         await session.send_line(f"  {color('[E]', YELLOW)} Map tile editor")
         await session.send_line(f"  {color('[V]', YELLOW)} Viewport theme editor")
@@ -321,6 +322,60 @@ async def gm_menu(session, world):
                     break  # back to game
                 else:
                     session.log(color("Invalid floor!", RED))
+            except ValueError:
+                pass
+
+        elif choice == 'R' and has_char:
+            # Region teleport
+            from dungeon.region import load_region_index, load_segment, get_segment_display_name
+            from dungeon.floor import set_overworld
+            idx = load_region_index()
+            await session.send_line()
+            await session.send_line(color("  Available regions:", WHITE))
+            segments_with_towns = []
+            for seg in idx.get('segments', []):
+                if seg.get('towns'):
+                    segments_with_towns.append(seg)
+            # Also show all segments
+            all_segs = idx.get('segments', [])
+            for i, seg in enumerate(all_segs):
+                towns = ', '.join(seg.get('towns', [])) or 'wilderness'
+                grid = seg.get('grid', [0, 0])
+                marker = " <--" if (grid[0] == session.char.get('region_col', 3)
+                                    and grid[1] == session.char.get('region_row', 0)) else ""
+                await session.send_line(f"  [{i+1:2d}] ({grid[0]},{grid[1]}) {towns}{marker}")
+            await session.send_line()
+            pick = await session.get_input("  Teleport to #: ")
+            try:
+                idx_pick = int(pick) - 1
+                if 0 <= idx_pick < len(all_segs):
+                    seg = all_segs[idx_pick]
+                    grid_pos = seg.get('grid', [0, 0])
+                    new_grid = load_segment(grid_pos[0], grid_pos[1])
+                    if new_grid:
+                        set_overworld(new_grid)
+                        session.char['floor'] = -1  # overworld
+                        session.char['region_col'] = grid_pos[0]
+                        session.char['region_row'] = grid_pos[1]
+                        # Spawn at center or town
+                        size = len(new_grid)
+                        sx, sy = size // 2, size // 2
+                        for y in range(size):
+                            for x in range(size):
+                                if new_grid[y][x] == 15:  # town
+                                    sx, sy = x, y
+                                    break
+                            else:
+                                continue
+                            break
+                        session.char['x'] = sx
+                        session.char['y'] = sy
+                        zone = get_segment_display_name(grid_pos[0], grid_pos[1])
+                        session.log(color(f"Teleported to {zone}!", MAGENTA))
+                        save_character(session.char)
+                        break
+                    else:
+                        session.log(color("Segment not found!", RED))
             except ValueError:
                 pass
 

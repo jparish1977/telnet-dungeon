@@ -22,6 +22,201 @@ from dungeon.character import validate_position
 from dungeon.renderer_3d import render_3d_view
 from dungeon.renderer_minimap import render_minimap
 from dungeon.combat import _bar
+from dungeon.region import try_zone_transition, get_segment_display_name, get_current_segment
+from dungeon.quests import (
+    get_visible_entrances, get_all_visible_npcs,
+    run_npc_dialog, get_quest_stage,
+    set_quest_stage, apply_quest_rewards, has_quest_flag,
+    apply_all_active_mods,
+)
+
+
+async def show_full_map(session, dungeon, floor_num, quest_entrances=None, quest_npcs=None):
+    """Full-screen scrollable map view with zoom levels."""
+    from dungeon.config import (
+        CSI, CLEAR, RESET,
+        OW_GRASS, OW_FOREST, OW_MOUNTAIN, OW_WATER, OW_ROAD, OW_TOWN, OW_DUNGEON,
+    )
+    from dungeon.monsters import get_floor_monsters
+    from dungeon.region import (
+        load_region_index, load_segment, get_current_segment, get_segment_display_name,
+    )
+
+    size = len(dungeon)
+    px, py = session.char['x'], session.char['y']
+    tw, th = session.term_width, session.term_height
+    map_rows = th - 3
+    map_cols = tw - 2
+
+    # Zoom: 1 = 1:1, 2 = 1:2 (each char = 2x2 tiles), etc
+    zoom = 1
+    world_view = False
+
+    # Build lookup sets for current segment
+    qe_set = {(e[0], e[1]) for e in (quest_entrances or [])}
+    npc_set = {}
+    for n in (quest_npcs or []):
+        npc_set[(n['x'], n['y'])] = n['symbol']
+    mob_set = {}
+    for m in get_floor_monsters(floor_num):
+        if m['alive']:
+            mob_set[(m['x'], m['y'])] = m['symbol']
+
+    tile_render = {
+        0: ('.', '37'), 1: ('#', '90'), 2: ('+', '36'), 3: ('>', '31'),
+        4: ('<', '32'), 5: ('$', '93'), 6: ('~', '36'),
+        OW_GRASS: ('.', '32'), OW_FOREST: ('T', '32'), OW_MOUNTAIN: ('^', '37'),
+        OW_WATER: ('~', '34'), OW_ROAD: ('=', '33'), OW_TOWN: ('@', '93'),
+        OW_DUNGEON: ('D', '31'), 17: ('>', '95'),  # portal
+    }
+
+    # Camera in tile coords
+    cam_x = max(0, px - map_cols // 2)
+    cam_y = max(0, py - map_rows // 2)
+
+    while True:
+        await session.send(CLEAR)
+        await session.move_to(1, 1)
+
+        if world_view:
+            # World map: stitch all segments, heavily downsampled
+            idx = load_region_index()
+            n_cols = idx.get('cols', 6)
+            n_rows = idx.get('rows', 8)
+            seg_size = 128
+            # Each segment gets a few chars
+            chars_per_seg_x = max(1, map_cols // n_cols)
+            chars_per_seg_y = max(1, map_rows // n_rows)
+            tiles_per_char_x = seg_size // chars_per_seg_x
+            tiles_per_char_y = seg_size // chars_per_seg_y
+
+            cur_col, cur_row = get_current_segment(session.char)
+            zone = get_segment_display_name(cur_col, cur_row)
+            await session.send(color(f" WORLD MAP - {zone}  +/-=zoom M/Q=close", CYAN))
+
+            # Render top-to-bottom (row n_rows-1 is north = top)
+            for vr in range(min(map_rows, n_rows * chars_per_seg_y)):
+                seg_row = n_rows - 1 - (vr // chars_per_seg_y)
+                local_y = (vr % chars_per_seg_y) * tiles_per_char_y
+                row_str = ""
+                for vc in range(min(map_cols, n_cols * chars_per_seg_x)):
+                    seg_col = vc // chars_per_seg_x
+                    local_x = (vc % chars_per_seg_x) * tiles_per_char_x
+
+                    # Player marker
+                    if seg_col == cur_col and seg_row == cur_row:
+                        # Check if player is in this chunk
+                        px_chunk = px // tiles_per_char_x
+                        py_chunk = py // tiles_per_char_y
+                        if (vc % chars_per_seg_x) == px_chunk and (vr % chars_per_seg_y) == py_chunk:
+                            row_str += f"{CSI}30;107m@{RESET}"
+                            continue
+
+                    # Sample tile from segment
+                    seg = load_segment(seg_col, seg_row)
+                    if seg and 0 <= local_y < len(seg) and 0 <= local_x < len(seg[0]):
+                        t = seg[local_y][local_x]
+                        ch, code = tile_render.get(t, ('.', '90'))
+                        row_str += f"{CSI}{code}m{ch}{RESET}"
+                    else:
+                        row_str += " "
+                await session.move_to(2 + vr, 1)
+                await session.send(row_str)
+
+            # Town labels
+            label_row = 2 + min(map_rows, n_rows * chars_per_seg_y) + 1
+            if label_row < th:
+                await session.move_to(label_row, 1)
+                labels = ""
+                for seg in idx.get('segments', []):
+                    if seg.get('towns'):
+                        labels += color(f" {seg['towns'][0]}", YELLOW)
+                await session.send(labels[:tw-2])
+
+        else:
+            # Normal map with zoom
+            zone_col, zone_row = get_current_segment(session.char)
+            zone = get_segment_display_name(zone_col, zone_row)
+            zoom_label = f"x{zoom}" if zoom > 1 else "1:1"
+            await session.send(color(
+                f" MAP - {zone} [{px},{py}] zoom:{zoom_label}  WASD=scroll +/-=zoom Z=world M/Q=close",
+                CYAN))
+
+            total_size = size  # could expand for multi-segment view at zoom > 4
+
+            for vr in range(map_rows):
+                my = cam_y + vr * zoom
+                row_str = ""
+                for vc in range(map_cols):
+                    mx = cam_x + vc * zoom
+
+                    # At zoom > 1, sample the dominant tile in the area
+                    if zoom == 1:
+                        tmx, tmy = mx, my
+                    else:
+                        tmx, tmy = mx + zoom // 2, my + zoom // 2
+
+                    if tmx == px and tmy == py and zoom == 1:
+                        row_str += f"{CSI}30;107m@{RESET}"
+                    elif zoom == 1 and (tmx, tmy) in npc_set:
+                        row_str += f"{CSI}96m{npc_set[(tmx, tmy)]}{RESET}"
+                    elif zoom == 1 and (tmx, tmy) in qe_set:
+                        row_str += f"{CSI}95m?{RESET}"
+                    elif zoom == 1 and (tmx, tmy) in mob_set:
+                        row_str += f"{CSI}91m{mob_set[(tmx, tmy)]}{RESET}"
+                    elif 0 <= tmx < total_size and 0 <= tmy < total_size:
+                        t = dungeon[tmy][tmx] if tmy < len(dungeon) and tmx < len(dungeon[0]) else 13
+                        ch, code = tile_render.get(t, ('?', '90'))
+                        # Player marker at any zoom
+                        if zoom > 1 and mx <= px < mx + zoom and my <= py < my + zoom:
+                            row_str += f"{CSI}30;107m@{RESET}"
+                        else:
+                            row_str += f"{CSI}{code}m{ch}{RESET}"
+                    else:
+                        row_str += " "
+                await session.move_to(2 + vr, 1)
+                await session.send(row_str)
+
+        # Legend at bottom
+        legend_row = th - 1
+        await session.move_to(legend_row, 1)
+        await session.send(
+            f" {CSI}30;107m@{RESET}You"
+            f" {CSI}93m@{RESET}Town"
+            f" {CSI}33m={RESET}Road"
+            f" {CSI}32m.{RESET}Grass"
+            f" {CSI}32mT{RESET}Forest"
+            f" {CSI}37m^{RESET}Mt"
+            f" {CSI}34m~{RESET}Water"
+            f" {CSI}31mD{RESET}Dungeon"
+            f" {CSI}96mG{RESET}NPC"
+            f" {CSI}95m?{RESET}Quest"
+        )
+
+        cmd = (await session.get_char("")).lower()
+        if cmd in ('q', 'm', '\x1b'):
+            break
+        scroll = max(1, 5 * zoom)
+        if cmd == 'w':
+            cam_y = max(0, cam_y - scroll)
+        elif cmd == 's':
+            max_cam = max(0, size * zoom - map_rows * zoom)
+            cam_y = min(max_cam, cam_y + scroll)
+        elif cmd == 'a':
+            cam_x = max(0, cam_x - scroll)
+        elif cmd == 'd':
+            max_cam = max(0, size * zoom - map_cols * zoom)
+            cam_x = min(max_cam, cam_x + scroll)
+        elif cmd in ('+', '='):
+            zoom = min(8, zoom * 2)
+            cam_x = max(0, px - (map_cols * zoom) // 2)
+            cam_y = max(0, py - (map_rows * zoom) // 2)
+        elif cmd == '-':
+            zoom = max(1, zoom // 2)
+            cam_x = max(0, px - (map_cols * zoom) // 2)
+            cam_y = max(0, py - (map_rows * zoom) // 2)
+        elif cmd == 'z':
+            world_view = not world_view
 
 
 async def draw_game_screen(session, world):
@@ -36,7 +231,9 @@ async def draw_game_screen(session, world):
     online = world.player_count()
     fsize = len(dungeon)
     if is_overworld(floor):
-        header = f" The Overworld ({fsize}x{fsize}) [{px},{py}]"
+        col, row = get_current_segment(session.char)
+        zone_name = get_segment_display_name(col, row)
+        header = f" {zone_name} ({fsize}x{fsize}) [{px},{py}]"
     else:
         header = f" Dungeon of Doom - Floor {floor + 1} ({fsize}x{fsize}) [{px},{py}]"
     right_info = f"{online} online  {tw}x{th}"
@@ -59,7 +256,14 @@ async def draw_game_screen(session, world):
     view_3d = render_3d_view(dungeon, px, py, facing, vw, vh, floor, vis_mobs)
     map_radius = session.get_map_radius()
     other_players = world.get_players_on_floor(floor, session.char['name'])
-    minimap = render_minimap(dungeon, px, py, facing, map_radius, other_players, floor)
+    # Quest data for minimap
+    quest_entrances = get_visible_entrances(session.char, floor)
+    quest_npcs = get_all_visible_npcs(session.char, floor)
+    minimap = render_minimap(
+        dungeon, px, py, facing, map_radius, other_players, floor,
+        quest_markers=[(e[0], e[1], '?', MAGENTA) for e in quest_entrances]
+                    + [(n['x'], n['y'], n['symbol'], CYAN) for n in quest_npcs],
+    )
 
     view_lines = view_3d.split('\n')
     view_start_row = 3
@@ -174,7 +378,7 @@ async def draw_game_screen(session, world):
 
     # Controls at very bottom
     ctrl_row = th - 1
-    controls = f" {color('W', YELLOW)}Fwd {color('A', YELLOW)}Left {color('D', YELLOW)}Right {color('S', YELLOW)}Back {color('C', YELLOW)}har {color('T', YELLOW)}alk"
+    controls = f" {color('W', YELLOW)}Fwd {color('A', YELLOW)}Left {color('D', YELLOW)}Right {color('S', YELLOW)}Back {color('C', YELLOW)}har {color('T', YELLOW)}alk {color('M', YELLOW)}ap"
     if others_here:
         controls += f" {color('P', RED)}vP"
     controls += f" {color('Q', YELLOW)}uit"
@@ -196,6 +400,19 @@ async def draw_game_screen(session, world):
     elif current_tile == OW_TOWN:
         controls += f" {color('H', YELLOW)}Shop"
 
+    # Quest entrance at current position
+    for qe in quest_entrances:
+        if qe[0] == px and qe[1] == py:
+            label = qe[3].get('label', 'Quest Dungeon')
+            controls += f" {color('>', MAGENTA)}{label}"
+            break
+
+    # Quest NPC nearby (on current tile)
+    for npc in quest_npcs:
+        if npc['x'] == px and npc['y'] == py:
+            controls += f" {color('[N]', CYAN)}{npc['name']}"
+            break
+
     await session.send_at(ctrl_row, 1, controls)
 
     # Prompt on last row
@@ -205,6 +422,8 @@ async def draw_game_screen(session, world):
 
 async def run_main_loop(session, world):
     """Main exploration loop."""
+    # Apply quest map modifications for any active quests
+    apply_all_active_mods(session.char)
     # Validate position on entry (catches old saves, wall spawns, etc)
     if validate_position(session.char):
         session.log(color("You were relocated to a safe position.", YELLOW))
@@ -227,6 +446,9 @@ async def run_main_loop(session, world):
         await session.draw_game_screen()
 
         current_tile = dungeon[py][px]
+        # Quest data for this tick
+        quest_entrances = get_visible_entrances(session.char, floor)
+        quest_npcs = get_all_visible_npcs(session.char, floor)
         cmd = (await session.get_char("", redraw_on_resize=True)).lower()
 
         # On resize, force full redraw
@@ -269,6 +491,27 @@ async def run_main_loop(session, world):
 
         elif cmd == '/' and session.is_gm:
             await session.gm_menu()
+            continue
+
+        elif cmd == 'n':
+            # Talk to quest NPC on current tile
+            for npc in quest_npcs:
+                if npc['x'] == px and npc['y'] == py:
+                    quest_id = npc.get('quest_id')
+                    await run_npc_dialog(session, npc, quest_id)
+                    # Check if quest just completed (returned to Ginger with both cats)
+                    if (quest_id and has_quest_flag(session.char, quest_id, 'bookeater_found')
+                            and npc.get('location') == 'town'
+                            and get_quest_stage(session.char, quest_id) != 'complete'):
+                        set_quest_stage(session.char, quest_id, 'complete')
+                        msgs = apply_quest_rewards(session.char, quest_id)
+                        for msg in msgs:
+                            await session.send_line(msg)
+                        await session.get_char(color("  (press any key)", DIM))
+                    session.invalidate_frame()
+                    break
+            else:
+                session.log("No one to talk to here.")
             continue
 
         elif cmd == 'p':
@@ -334,6 +577,12 @@ async def run_main_loop(session, world):
             await session.character_screen()
             continue
 
+        elif cmd == 'm':
+            await show_full_map(session, dungeon, floor, quest_entrances, quest_npcs)
+            session.invalidate_frame()
+            await session.send(CLEAR)
+            continue
+
         elif cmd == 'h' and current_tile in (4, OW_TOWN):
             await session.shop()
             continue
@@ -357,7 +606,39 @@ async def run_main_loop(session, world):
                 dungeon[py][px] = 0  # Remove fountain
             continue
 
-        elif cmd == '>' and (current_tile == 3 or current_tile == OW_DUNGEON):
+        elif cmd == '>':
+            # Check for quest entrance first
+            quest_entrance = None
+            for qe in quest_entrances:
+                if qe[0] == px and qe[1] == py:
+                    quest_entrance = qe
+                    break
+            if quest_entrance:
+                _qx, _qy, quest_id, ent_data = quest_entrance
+                target_floor = ent_data.get('target_floor', 'gyre_1')
+                label = ent_data.get('label', 'Quest Dungeon')
+                # Save return position
+                session.char['quest_return_floor'] = floor
+                session.char['quest_return_x'] = px
+                session.char['quest_return_y'] = py
+                # Enter quest dungeon (use quest floor ID as a string-keyed floor)
+                # For now, map quest floors to high floor numbers to avoid collision
+                quest_floor_map = {
+                    'gyre_1': 90000,
+                    'gyre_2': 90001,
+                }
+                qfloor = quest_floor_map.get(target_floor, 90000)
+                session.char['floor'] = qfloor
+                sx, sy = get_floor_spawn(qfloor)
+                session.char['x'] = sx
+                session.char['y'] = sy
+                session.log(color(f"You enter {label}...", MAGENTA))
+                session.invalidate_frame()
+                save_character(session.char)
+                continue
+
+            if not (current_tile == 3 or current_tile == OW_DUNGEON):
+                continue
             if current_tile == OW_DUNGEON:
                 # Enter dungeon from overworld
                 # Save overworld position
@@ -382,7 +663,20 @@ async def run_main_loop(session, world):
             continue
 
         elif cmd == '<' and current_tile == 4:
-            if floor > 0:
+            # Check if we're in a quest dungeon
+            if floor >= 90000:
+                ret_floor = session.char.get('quest_return_floor', OVERWORLD_FLOOR)
+                ret_x = session.char.get('quest_return_x', 1)
+                ret_y = session.char.get('quest_return_y', 1)
+                session.char['floor'] = ret_floor
+                session.char['x'] = ret_x
+                session.char['y'] = ret_y
+                validate_position(session.char)
+                session.log(color("You leave the quest dungeon...", GREEN))
+                session.invalidate_frame()
+                save_character(session.char)
+                continue
+            elif floor > 0:
                 session.char['floor'] -= 1
                 # Find stairs down on previous floor
                 prev_floor = get_floor(session.char['floor'])
@@ -428,7 +722,33 @@ async def run_main_loop(session, world):
 
         # Check if we can move there
         if cmd == 'w':
-            target = dungeon[new_y][new_x] if 0 <= new_y < len(dungeon) and 0 <= new_x < len(dungeon[0]) else 1
+            map_size = len(dungeon)
+
+            # Check for zone transition (walking off edge OR into border of overworld)
+            at_edge = (not (0 <= new_y < map_size and 0 <= new_x < map_size)
+                       or (is_overworld(floor) and (new_y <= 0 or new_y >= map_size - 1
+                           or new_x <= 0 or new_x >= map_size - 1)))
+            if at_edge:
+                # Translate border positions to out-of-bounds for the transition logic
+                trans_x = -1 if new_x <= 0 else (map_size if new_x >= map_size - 1 else new_x)
+                trans_y = -1 if new_y <= 0 else (map_size if new_y >= map_size - 1 else new_y)
+                transitioned, new_grid = try_zone_transition(session.char, trans_x, trans_y, map_size)
+                if transitioned and new_grid:
+                    # Swap the overworld to the new segment
+                    from dungeon.floor import set_overworld
+                    set_overworld(new_grid)
+                    col, row = get_current_segment(session.char)
+                    zone_name = get_segment_display_name(col, row)
+                    session.log(color(f"Entering {zone_name}...", CYAN))
+                    session.invalidate_frame()
+                    await session.send(CLEAR)
+                    save_character(session.char)
+                    continue
+                else:
+                    session.log("You can't go any further.")
+                    continue
+
+            target = dungeon[new_y][new_x]
             # Check blocking tiles
             blocked = False
             if is_tile_blocked(target, floor):
@@ -459,7 +779,8 @@ async def run_main_loop(session, world):
                 if target == 5:
                     t_key = f"{floor}_{new_x}_{new_y}"
                     if t_key not in session.char.get('treasures_found', []):
-                        gold_found = random.randint(10, 50) * (floor + 1)
+                        effective_floor = min(floor, 50) if floor < 90000 else 5
+                        gold_found = random.randint(10, 50) * (effective_floor + 1)
                         session.char['gold'] += gold_found
                         if 'treasures_found' not in session.char:
                             session.char['treasures_found'] = []
@@ -481,6 +802,13 @@ async def run_main_loop(session, world):
                 elif target == OW_FOREST:
                     if random.randint(1, 8) == 1:
                         session.log(color("The forest rustles ominously...", DIM))
+
+                # Check if we walked into a quest NPC
+                for npc in quest_npcs:
+                    if npc['x'] == new_x and npc['y'] == new_y:
+                        await run_npc_dialog(session, npc, npc.get('quest_id'))
+                        session.invalidate_frame()
+                        break
 
                 # Check if we walked into a monster
                 mob = get_monster_at(floor, new_x, new_y)

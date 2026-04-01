@@ -267,7 +267,12 @@ _overworld_size = 128
 def get_overworld():
     global _overworld
     if _overworld is None:
-        _overworld = generate_overworld(_overworld_size)
+        # Check for custom overworld first
+        custom = load_custom_floor(OVERWORLD_FLOOR)
+        if custom:
+            _overworld = custom
+        else:
+            _overworld = generate_overworld(_overworld_size)
     return _overworld
 
 
