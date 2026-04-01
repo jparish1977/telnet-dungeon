@@ -11,7 +11,6 @@ Usage:
 import argparse
 import json
 import math
-import sys
 
 import requests
 from PIL import Image, ImageDraw

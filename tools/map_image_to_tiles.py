@@ -12,7 +12,6 @@ Usage:
 import argparse
 import math
 import os
-import sys
 
 import requests
 from PIL import Image

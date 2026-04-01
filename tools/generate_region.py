@@ -74,8 +74,6 @@ def generate_segment_terrain(center_lat, center_lon, seed):
             v += rng.uniform(-0.1, 0.1)
         return v
 
-    km_per_deg_lon = 111.0 * math.cos(math.radians(center_lat))
-
     for row in range(SIZE):
         for col in range(SIZE):
             n = noise(col + seed * 7, row + seed * 13, 1.0)
@@ -290,7 +288,7 @@ def main():
 
     print(f"\nGenerated {len(SEGMENTS)} map segments in {output_dir}/")
     print(f"Region index: {index_path}")
-    print(f"\nTo use: load segment maps as overworld replacements via the portal system")
+    print("\nTo use: load segment maps as overworld replacements via the portal system")
 
 
 if __name__ == "__main__":
