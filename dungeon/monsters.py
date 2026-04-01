@@ -136,6 +136,7 @@ def move_floor_monsters(floor_num, player_positions):
                             break
             continue
 
+        # Find nearest player
         nearest_dist = 999
         nearest_px, nearest_py = mob['x'], mob['y']
         for px, py in player_positions:
@@ -144,7 +145,22 @@ def move_floor_monsters(floor_num, player_positions):
                 nearest_dist = dist
                 nearest_px, nearest_py = px, py
 
-        if nearest_dist <= 5 and random.random() < 0.6:
+        # Behavior-driven AI (if mob has rules)
+        if mob.get('behavior'):
+            from dungeon.behavior import evaluate_behavior
+            players_info = [{'x': px, 'y': py, 'hp': 1, 'max_hp': 1, 'class': ''}
+                            for px, py in player_positions]
+            alive_allies = sum(1 for m in monsters if m['alive'] and m is not mob)
+            actions = evaluate_behavior(
+                mob, players_info, floor_num, ally_count=alive_allies,
+            )
+            nx, ny = _execute_movement_action(
+                actions, mob, nearest_px, nearest_py, size,
+            )
+            if nx is None:
+                continue
+        # Default hardcoded AI (chase/wander)
+        elif nearest_dist <= 5 and random.random() < 0.6:
             dx = 0
             dy = 0
             if nearest_px > mob['x']:
@@ -173,6 +189,65 @@ def move_floor_monsters(floor_num, player_positions):
                 if not occupied:
                     mob['x'] = nx
                     mob['y'] = ny
+
+
+def _execute_movement_action(actions, mob, target_x, target_y, floor_size):
+    """Translate behavior actions into a movement target.
+
+    Returns (nx, ny) or (None, None) if no movement.
+    """
+    for act in actions:
+        if act == 'move_toward_player':
+            dx = 0
+            dy = 0
+            if target_x > mob['x']:
+                dx = 1
+            elif target_x < mob['x']:
+                dx = -1
+            if target_y > mob['y']:
+                dy = 1
+            elif target_y < mob['y']:
+                dy = -1
+            if random.random() < 0.5:
+                return mob['x'] + dx, mob['y']
+            else:
+                return mob['x'], mob['y'] + dy
+
+        elif act == 'flee_from_player':
+            dx = 0
+            dy = 0
+            if target_x > mob['x']:
+                dx = -1
+            elif target_x < mob['x']:
+                dx = 1
+            if target_y > mob['y']:
+                dy = -1
+            elif target_y < mob['y']:
+                dy = 1
+            if random.random() < 0.5:
+                return mob['x'] + dx, mob['y']
+            else:
+                return mob['x'], mob['y'] + dy
+
+        elif act == 'patrol' or act.startswith('patrol '):
+            direction = random.choice([(0, -1), (0, 1), (-1, 0), (1, 0)])
+            return mob['x'] + direction[0], mob['y'] + direction[1]
+
+        elif act == 'idle':
+            return None, None
+
+        elif act.startswith('teleport '):
+            parts = act.split()
+            if len(parts) == 3:
+                try:
+                    tx, ty = int(parts[1]), int(parts[2])
+                    if 0 < tx < floor_size - 1 and 0 < ty < floor_size - 1:
+                        return tx, ty
+                except ValueError:
+                    pass
+
+    # No movement action found — stay put
+    return None, None
 
 
 def get_monster_at(floor_num, x, y):
