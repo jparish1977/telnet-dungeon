@@ -30,6 +30,19 @@ class StdioAdapter(ProtocolAdapter):
         except OSError:
             pass
 
+    def _check_resize(self):
+        """Poll terminal size and set resized flag if it changed."""
+        try:
+            cols, rows = os.get_terminal_size()
+            cols = max(40, min(200, cols))
+            rows = max(16, min(80, rows))
+            if cols != self._term_width or rows != self._term_height:
+                self._term_width = cols
+                self._term_height = rows
+                self._resized = True
+        except OSError:
+            pass
+
     @property
     def term_width(self) -> int:
         return self._term_width
@@ -83,6 +96,12 @@ class StdioAdapter(ProtocolAdapter):
         if prompt:
             sys.stdout.write(prompt)
             sys.stdout.flush()
+
+        # Check for terminal resize before reading input
+        self._check_resize()
+        if self._resized and redraw_on_resize:
+            self._resized = False
+            return 'RESIZE'
 
         loop = asyncio.get_event_loop()
 
