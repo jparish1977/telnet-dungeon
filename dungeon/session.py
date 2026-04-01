@@ -1,5 +1,6 @@
 """Game session logic - main loop, screen rendering, character screen."""
 
+import asyncio
 import math
 import random
 
@@ -24,14 +25,12 @@ from dungeon.combat import _bar
 
 
 async def draw_game_screen(session, world):
-    """Render the full game screen using cursor positioning."""
+    """Render the game screen using differential updates (only send changed cells)."""
     floor = session.char['floor']
     dungeon = get_floor(floor)
     px, py = session.char['x'], session.char['y']
     facing = session.char['facing']
     tw, th = session.term_width, session.term_height
-
-    await session.send(CLEAR)
 
     # Row 1: Header
     online = world.player_count()
@@ -42,17 +41,15 @@ async def draw_game_screen(session, world):
         header = f" Dungeon of Doom - Floor {floor + 1} ({fsize}x{fsize}) [{px},{py}]"
     right_info = f"{online} online  {tw}x{th}"
     pad = tw - len(header) - len(right_info) - 2
-    await session.move_to(1, 1)
-    await session.send(color(header, CYAN) + ' ' * max(1, pad) + color(right_info, DIM))
+    await session.send_at(1, 1, color(header, CYAN) + ' ' * max(1, pad) + color(right_info, DIM))
 
     # Row 2: Character info + nearby players
     others_here = world.get_players_at(floor, px, py, session.char['name'])
-    await session.move_to(2, 1)
     info = f" {session.char['name']} Lv.{session.char['level']} {session.char['class']}  Facing: {DIR_NAMES[facing]}"
     if others_here:
         names = ', '.join(s.char['name'] for s in others_here)
         info += color(f"  Party: {names}", GREEN)
-    await session.send(info)
+    await session.send_at(2, 1, info)
 
     # 3D viewport fills rows 3 through (th - 7)
     vw, vh = session.get_view_size()
@@ -74,8 +71,7 @@ async def draw_game_screen(session, world):
         row = view_start_row + i
         if row >= th - 6:
             break
-        await session.move_to(row, 2)
-        await session.send(vline)
+        await session.send_at(row, 2, vline)
 
     # Draw minimap beside the 3D view, vertically centered
     map_start = view_start_row + max(0, (len(view_lines) - len(minimap)) // 2)
@@ -83,8 +79,7 @@ async def draw_game_screen(session, world):
         row = map_start + i
         if row >= th - 6:
             break
-        await session.move_to(row, map_col)
-        await session.send(mline)
+        await session.send_at(row, map_col, mline)
 
     # Player direction indicators around minimap edges
     if other_players:
@@ -110,28 +105,24 @@ async def draw_game_screen(session, world):
                     # Right side
                     edge_row = mid_row + int(map_h/2 * dy / max(1, abs(dx)))
                     edge_row = max(map_start, min(map_start + map_h - 1, edge_row))
-                    await session.move_to(edge_row, map_col + map_w + 1)
-                    await session.send(color(label + ">", GREEN))
+                    await session.send_at(edge_row, map_col + map_w + 1, color(label + ">", GREEN))
                 else:
                     # Left side
                     edge_row = mid_row + int(map_h/2 * dy / max(1, abs(dx)))
                     edge_row = max(map_start, min(map_start + map_h - 1, edge_row))
-                    await session.move_to(edge_row, map_col - len(label) - 1)
-                    await session.send(color("<" + label, GREEN))
+                    await session.send_at(edge_row, map_col - len(label) - 1, color("<" + label, GREEN))
             else:
                 # Top or bottom edge
                 if dy > 0:
                     # Bottom
                     edge_col = mid_col + int(map_w/2 * dx / max(1, abs(dy)))
                     edge_col = max(map_col, min(map_col + map_w - 1, edge_col))
-                    await session.move_to(map_start + map_h, edge_col)
-                    await session.send(color(label + "v", GREEN))
+                    await session.send_at(map_start + map_h, edge_col, color(label + "v", GREEN))
                 else:
                     # Top
                     edge_col = mid_col + int(map_w/2 * dx / max(1, abs(dy)))
                     edge_col = max(map_col, min(map_col + map_w - 1, edge_col))
-                    await session.move_to(map_start - 1, edge_col)
-                    await session.send(color(label + "^", GREEN))
+                    await session.send_at(map_start - 1, edge_col, color(label + "^", GREEN))
 
     # Layout from viewport bottom down:
     # [viewport ends] -> [log area] -> [status 2 rows] -> [controls] -> [prompt]
@@ -140,17 +131,14 @@ async def draw_game_screen(session, world):
     log_start = viewport_bottom
 
     # Draw log separator
-    await session.move_to(log_start, 1)
     log_label = " -- Log "
-    await session.send(color(log_label + '-' * max(0, tw - len(log_label) - 1), DIM))
+    await session.send_at(log_start, 1, color(log_label + '-' * max(0, tw - len(log_label) - 1), DIM))
 
     # Combine local messages with global log, newest at bottom
     log_display_rows = max(1, log_rows - 1)
     combined = []
-    # Interleave: global log as background, local messages on top
     combined.extend(world.global_log)
     combined.extend(session.message_log)
-    # Deduplicate keeping order (messages might be in both)
     seen = set()
     unique = []
     for msg in combined:
@@ -163,11 +151,10 @@ async def draw_game_screen(session, world):
         row = log_start + 1 + i
         if row >= th - 3:
             break
-        await session.move_to(row, 1)
         if i < len(display_msgs):
-            await session.send(f" {display_msgs[i]}")
+            await session.send_at(row, 1, f" {display_msgs[i]}")
         else:
-            await session.send(color(" ~", DIM))  # empty log line marker
+            await session.send_at(row, 1, color(" ~", DIM))
     session.message_log.clear()
 
     # Status rows
@@ -177,19 +164,16 @@ async def draw_game_screen(session, world):
     hp_bar = _bar(session.char['hp'], session.char['max_hp'], hp_w, GREEN)
     mp_bar = _bar(session.char['mp'], session.char['max_mp'], mp_w, CYAN)
 
-    await session.move_to(status_row, 1)
     status = f" HP:{hp_bar}  MP:{mp_bar}  Gold:{color(str(session.char['gold']), YELLOW)}  Pot:{session.char['potions']}"
     if session.char.get('poisoned'):
         status += color(" [POISON]", MAGENTA)
     hc_tag = color(" [HC]", RED) if session.char.get('hardcore', False) else ""
-    await session.send(status + hc_tag)
+    await session.send_at(status_row, 1, status + hc_tag)
 
-    await session.move_to(status_row + 1, 1)
-    await session.send(f" ATK:{session.get_atk()} DEF:{session.get_def()} SPD:{session.char['spd']} XP:{session.char['xp']}/{session.char['xp_next']}  {WEAPONS[session.char['weapon']]['name']} / {ARMOR[session.char['armor']]['name']}")
+    await session.send_at(status_row + 1, 1, f" ATK:{session.get_atk()} DEF:{session.get_def()} SPD:{session.char['spd']} XP:{session.char['xp']}/{session.char['xp_next']}  {WEAPONS[session.char['weapon']]['name']} / {ARMOR[session.char['armor']]['name']}")
 
     # Controls at very bottom
     ctrl_row = th - 1
-    await session.move_to(ctrl_row, 1)
     controls = f" {color('W', YELLOW)}Fwd {color('A', YELLOW)}Left {color('D', YELLOW)}Right {color('S', YELLOW)}Back {color('C', YELLOW)}har {color('T', YELLOW)}alk"
     if others_here:
         controls += f" {color('P', RED)}vP"
@@ -212,11 +196,10 @@ async def draw_game_screen(session, world):
     elif current_tile == OW_TOWN:
         controls += f" {color('H', YELLOW)}Shop"
 
-    await session.send(controls)
+    await session.send_at(ctrl_row, 1, controls)
 
     # Prompt on last row
-    await session.move_to(th, 1)
-    await session.send(" > ")
+    await session.send_at(th, 1, " > ")
 
 
 
@@ -225,6 +208,9 @@ async def run_main_loop(session, world):
     # Validate position on entry (catches old saves, wall spawns, etc)
     if validate_position(session.char):
         session.log(color("You were relocated to a safe position.", YELLOW))
+    # Force full draw on first frame
+    session.invalidate_frame()
+    await session.send(CLEAR)
 
     while session.running and session.char['hp'] > 0:
         floor = session.char['floor']
@@ -243,8 +229,27 @@ async def run_main_loop(session, world):
         current_tile = dungeon[py][px]
         cmd = (await session.get_char("", redraw_on_resize=True)).lower()
 
-        # On resize, just redraw
+        # On resize, force full redraw
         if cmd == 'resize':
+            session.invalidate_frame()
+            await session.send(CLEAR)
+            continue
+
+        # Handle incoming PvP challenge response
+        if cmd == 'y' and hasattr(session, '_pvp_challenge_from'):
+            challenger = session._pvp_challenge_from
+            session._pvp_response = True
+            session.log(color("Challenge accepted! Prepare to fight!", GREEN))
+            challenger.log(color(f"{session.char['name']} accepted your challenge!", GREEN))
+            challenger.notify_event.set()
+            continue
+        elif cmd == 'n' and hasattr(session, '_pvp_challenge_from'):
+            challenger = session._pvp_challenge_from
+            session._pvp_response = False
+            del session._pvp_challenge_from
+            session.log(color("Challenge declined.", DIM))
+            challenger.log(color(f"{session.char['name']} declined your challenge.", DIM))
+            challenger.notify_event.set()
             continue
 
         if cmd == 'q':
@@ -267,30 +272,62 @@ async def run_main_loop(session, world):
             continue
 
         elif cmd == 'p':
-            # PvP - attack another player on same tile
+            # PvP - challenge another player on same tile
             others_here = world.get_players_at(floor, px, py, session.char['name'])
             if not others_here:
                 session.log("No one here to fight!")
-            elif len(others_here) == 1:
-                killer = others_here[0].char['name']
-                await session.pvp_combat(others_here[0])
-                if session.char['hp'] <= 0:
-                    await session.pvp_death(killer)
             else:
-                await session.move_to(session.term_height, 1)
-                await session.send("\033[2K")
-                for i, s in enumerate(others_here, 1):
-                    await session.send(f" [{i}]{s.char['name']} ")
-                pick = await session.get_char(" Attack who? ")
-                try:
-                    idx = int(pick) - 1
-                    if 0 <= idx < len(others_here):
-                        killer = others_here[idx].char['name']
-                        await session.pvp_combat(others_here[idx])
+                # Pick target
+                target = None
+                if len(others_here) == 1:
+                    target = others_here[0]
+                else:
+                    await session.move_to(session.term_height, 1)
+                    await session.send("\033[2K")
+                    for i, s in enumerate(others_here, 1):
+                        await session.send(f" [{i}]{s.char['name']} ")
+                    pick = await session.get_char(" Challenge who? ")
+                    try:
+                        idx = int(pick) - 1
+                        if 0 <= idx < len(others_here):
+                            target = others_here[idx]
+                    except ValueError:
+                        pass
+
+                if target:
+                    # Send challenge to target
+                    my_name = session.char['name']
+                    t_name = target.char['name']
+
+                    # Set pending challenge on target
+                    target._pvp_challenge_from = session
+                    target.log(color(f"{my_name} challenges you to a duel! Press [Y] to accept or [N] to decline.", YELLOW))
+                    target.notify_event.set()
+
+                    session.log(color(f"Challenge sent to {t_name}. Waiting...", YELLOW))
+
+                    # Wait for response (poll for up to 15 seconds)
+                    accepted = False
+                    for _ in range(30):
+                        await asyncio.sleep(0.5)
+                        if hasattr(target, '_pvp_response'):
+                            accepted = target._pvp_response
+                            del target._pvp_response
+                            del target._pvp_challenge_from
+                            break
+                    else:
+                        # Timeout
+                        if hasattr(target, '_pvp_challenge_from'):
+                            del target._pvp_challenge_from
+                        session.log(color(f"{t_name} didn't respond. Challenge expired.", DIM))
+
+                    if accepted:
+                        world.broadcast(f"{my_name} vs {t_name} - FIGHT!", RED)
+                        await session.pvp_combat(target)
                         if session.char['hp'] <= 0:
-                            await session.pvp_death(killer)
-                except ValueError:
-                    pass
+                            await session.pvp_death(t_name)
+                    elif hasattr(target, '_pvp_response'):
+                        del target._pvp_response
             continue
 
         elif cmd == 'c':
@@ -403,7 +440,17 @@ async def run_main_loop(session, world):
                     session.log("You bump into a wall!")
                 blocked = True
             if blocked:
-                pass
+                # Don't full-redraw, just show the message in the log area
+                if session.message_log:
+                    vw, vh = session.get_view_size()
+                    viewport_bottom = 3 + vh + 2 + 1
+                    await session.move_to(viewport_bottom, 1)
+                    await session.send("\033[2K")
+                    await session.send(f" {session.message_log[-1]}")
+                    session.message_log.clear()
+                    await session.move_to(session.term_height, 1)
+                    await session.send(" > ")
+                continue
             else:
                 session.char['x'] = new_x
                 session.char['y'] = new_y

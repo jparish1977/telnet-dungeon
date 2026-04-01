@@ -46,6 +46,7 @@ class WebSocketAdapter(ProtocolAdapter):
         self.running = True
         self._input_queue = asyncio.Queue()
         self._recv_task = None
+        self._handshake_done = False
 
     @property
     def term_width(self) -> int:
@@ -65,18 +66,21 @@ class WebSocketAdapter(ProtocolAdapter):
 
     async def _ws_send(self, data: str):
         """Send a WebSocket text frame."""
-        payload = data.encode('utf-8')
-        length = len(payload)
+        try:
+            payload = data.encode('utf-8')
+            length = len(payload)
 
-        if length < 126:
-            header = struct.pack('!BB', 0x81, length)
-        elif length < 65536:
-            header = struct.pack('!BBH', 0x81, 126, length)
-        else:
-            header = struct.pack('!BBQ', 0x81, 127, length)
+            if length < 126:
+                header = struct.pack('!BB', 0x81, length)
+            elif length < 65536:
+                header = struct.pack('!BBH', 0x81, 126, length)
+            else:
+                header = struct.pack('!BBQ', 0x81, 127, length)
 
-        self.writer.write(header + payload)
-        await self.writer.drain()
+            self.writer.write(header + payload)
+            await self.writer.drain()
+        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
+            self.running = False
 
     async def _ws_recv(self) -> str | None:
         """Receive a WebSocket text frame. Returns None on close/error."""
@@ -117,26 +121,31 @@ class WebSocketAdapter(ProtocolAdapter):
 
     async def _recv_loop(self):
         """Background task: receive WebSocket messages and queue them."""
-        while self.running:
-            msg = await self._ws_recv()
-            if msg is None:
-                self.running = False
-                await self._input_queue.put(None)
-                break
-            try:
-                data = json.loads(msg)
-                if data.get('type') == 'resize':
-                    w = max(40, min(200, data.get('width', 120)))
-                    h = max(16, min(80, data.get('height', 40)))
-                    if w != self._term_width or h != self._term_height:
-                        self._term_width = w
-                        self._term_height = h
-                        self._resized = True
-                        self.notify_event.set()
-                else:
-                    await self._input_queue.put(data)
-            except json.JSONDecodeError:
-                await self._input_queue.put({'type': 'char', 'char': msg})
+        try:
+            while self.running:
+                msg = await self._ws_recv()
+                if msg is None:
+                    self.running = False
+                    await self._input_queue.put(None)
+                    break
+                try:
+                    data = json.loads(msg)
+                    if data.get('type') == 'resize':
+                        w = max(40, min(200, data.get('width', 120)))
+                        h = max(16, min(80, data.get('height', 40)))
+                        if w != self._term_width or h != self._term_height:
+                            self._term_width = w
+                            self._term_height = h
+                            self._resized = True
+                            self.notify_event.set()
+                    else:
+                        await self._input_queue.put(data)
+                except json.JSONDecodeError:
+                    await self._input_queue.put({'type': 'char', 'char': msg})
+        except Exception as e:
+            print(f"[WS] recv_loop error: {e}")
+            self.running = False
+            await self._input_queue.put(None)
 
     async def _send_json(self, msg_type: str, **kwargs):
         """Send a typed JSON message to the client."""
@@ -144,16 +153,19 @@ class WebSocketAdapter(ProtocolAdapter):
         await self._ws_send(json.dumps(msg))
 
     async def send(self, text: str):
+        # Normalize line endings and send as ANSI text
+        text = text.replace('\r\n', '\n').replace('\n', '\r\n')
         await self._send_json('text', text=text)
 
     async def send_line(self, text: str = ""):
-        await self._send_json('text', text=text + '\n')
+        await self._send_json('text', text=text + '\r\n')
 
     async def move_to(self, row: int, col: int):
-        await self._send_json('cursor', row=row, col=col)
+        # Send as ANSI escape code so the terminal renderer handles it
+        await self._send_json('text', text=f'\033[{row};{col}H')
 
     async def clear_row(self, row: int):
-        await self._send_json('clear_row', row=row)
+        await self._send_json('text', text=f'\033[{row};1H\033[2K')
 
     async def get_input(self, prompt: str = "> ", preserve_spaces=False, prefill="") -> str:
         await self._send_json('prompt', text=prompt, mode='line', prefill=prefill)
@@ -221,38 +233,58 @@ class WebSocketAdapter(ProtocolAdapter):
 
     async def negotiate(self):
         """Perform WebSocket HTTP upgrade handshake."""
-        # Read HTTP request
-        request = b""
-        while b"\r\n\r\n" not in request:
-            chunk = await self.reader.read(4096)
-            if not chunk:
+        if self._handshake_done:
+            return  # already handled externally (e.g. by handle_web_client)
+        # Read HTTP request line-by-line to avoid over-reading into WS frames
+        request_lines = []
+        while True:
+            try:
+                line = await asyncio.wait_for(self.reader.readline(), timeout=10)
+            except asyncio.TimeoutError:
                 self.running = False
                 return
-            request += chunk
+            if not line:
+                self.running = False
+                return
+            request_lines.append(line.decode('utf-8', errors='replace').rstrip('\r\n'))
+            if line == b'\r\n' or line == b'\n':
+                break  # end of HTTP headers
 
         # Parse headers
         headers = {}
-        for line in request.decode('utf-8', errors='replace').split('\r\n')[1:]:
+        for line in request_lines[1:]:  # skip GET line
             if ':' in line:
                 key, val = line.split(':', 1)
                 headers[key.strip().lower()] = val.strip()
 
+        # Verify this is a WebSocket upgrade
+        if 'sec-websocket-key' not in headers:
+            # Not a WS request - send 400 and bail
+            self.writer.write(b"HTTP/1.1 400 Bad Request\r\n\r\nNot a WebSocket request\r\n")
+            await self.writer.drain()
+            self.running = False
+            return
+
         # Compute accept key
-        ws_key = headers.get('sec-websocket-key', '')
+        ws_key = headers['sec-websocket-key']
         accept = base64.b64encode(
             hashlib.sha1((ws_key + _WS_GUID).encode()).digest()
         ).decode()
 
         # Send upgrade response
+        origin = headers.get('origin', '*')
         response = (
             "HTTP/1.1 101 Switching Protocols\r\n"
             "Upgrade: websocket\r\n"
             "Connection: Upgrade\r\n"
             f"Sec-WebSocket-Accept: {accept}\r\n"
+            f"Access-Control-Allow-Origin: {origin}\r\n"
             "\r\n"
         )
         self.writer.write(response.encode())
         await self.writer.drain()
+
+        print(f"[WS] Handshake complete, origin={origin}")
 
         # Start background receiver
         self._recv_task = asyncio.create_task(self._recv_loop())

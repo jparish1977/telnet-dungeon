@@ -462,3 +462,121 @@ async def handle_pvp_death(session, killer_name):
     await session.send_line(color("  Respawning at stairs...", GREEN))
     await session.send_line()
     await session.get_char(color("  Press any key to get back in there...", DIM))
+
+
+async def run_pvp_combat(session, target):
+    """PvP duel — attacker controls, defender sees live updates."""
+    my_name = session.char['name']
+    t_name = target.char['name']
+
+    def notify_both(msg):
+        """Log a message to both combatants."""
+        session.log(msg)
+        target.log(msg)
+        target.notify_event.set()
+
+    notify_both(color(f"=== PVP: {my_name} vs {t_name} ===", RED))
+
+    session.combat_shield_bonus = 0
+    fled = False
+
+    while session.char['hp'] > 0 and target.char['hp'] > 0 and not fled:
+        # Status update to both
+        my_hp = _bar(session.char['hp'], session.char['max_hp'], 12, GREEN)
+        t_hp = _bar(target.char['hp'], target.char['max_hp'], 12, RED)
+        hp_status = f"  {color(my_name, GREEN)} HP:{my_hp}  vs  {color(t_name, RED)} HP:{t_hp}"
+        target.log(hp_status)
+        target.notify_event.set()
+
+        # Attacker's combat screen
+        await session.send(CLEAR)
+        await session.send_line(color("=== PVP DUEL ===", RED))
+        await session.send_line()
+        await session.send_line(hp_status)
+        await session.send_line()
+
+        for msg in session.message_log[-4:]:
+            await session.send_line(f"  {msg}")
+        session.message_log.clear()
+        await session.send_line()
+
+        await session.send_line(f"  {color('[A]', YELLOW)}ttack  {color('[P]', YELLOW)}otion  {color('[F]', YELLOW)}lee")
+        action = (await session.get_char("  Action: ")).upper()
+
+        player_acted = True
+
+        if action == 'F':
+            flee_chance = 30 + session.char['spd'] * 3
+            if random.randint(1, 100) <= flee_chance:
+                notify_both(color(f"{my_name} fled from the duel!", YELLOW))
+                fled = True
+                continue
+            else:
+                notify_both(color(f"{my_name} can't escape!", RED))
+
+        elif action == 'P':
+            if session.char['potions'] > 0:
+                session.char['potions'] -= 1
+                heal = random.randint(10, 20)
+                session.char['hp'] = min(session.char['max_hp'], session.char['hp'] + heal)
+                notify_both(color(f"{my_name} drinks a potion! +{heal} HP", GREEN))
+            else:
+                session.log(color("No potions!", RED))
+                player_acted = False
+
+        elif action == 'A':
+            my_atk = session.get_atk()
+            t_def = target.char['base_def'] + ARMOR[target.char['armor']]['def']
+            roll = random.randint(1, 20)
+            if roll == 20:
+                dmg = my_atk * 2
+                notify_both(color(f"{my_name} lands a CRITICAL HIT!", YELLOW))
+            elif roll + session.char['spd'] > 8:
+                dmg = max(1, my_atk - t_def // 2 + random.randint(-2, 2))
+            else:
+                dmg = 0
+                notify_both(color(f"{my_name}'s attack misses!", DIM))
+            if dmg > 0:
+                target.char['hp'] -= dmg
+                notify_both(f"{color(my_name, GREEN)} hits {color(t_name, RED)} for {color(str(dmg), YELLOW)} damage!")
+        else:
+            player_acted = False
+
+        # Defender auto-attacks back
+        if target.char['hp'] > 0 and player_acted:
+            t_atk = target.char['base_atk'] + WEAPONS[target.char['weapon']]['atk']
+            my_def = session.get_def()
+            roll = random.randint(1, 20)
+            if roll == 20:
+                dmg = t_atk * 2
+                notify_both(color(f"{t_name} lands a CRITICAL HIT!", RED))
+            elif roll + target.char['spd'] > 8:
+                dmg = max(1, t_atk - my_def // 2 + random.randint(-2, 2))
+            else:
+                dmg = 0
+                notify_both(color(f"{t_name}'s counter-attack misses!", DIM))
+            if dmg > 0:
+                session.char['hp'] -= dmg
+                notify_both(f"{color(t_name, RED)} hits {color(my_name, GREEN)} for {color(str(dmg), YELLOW)} damage!")
+
+    if fled:
+        return
+
+    # Determine winner/loser
+    if session.char['hp'] <= 0:
+        winner, loser = target, session
+    else:
+        winner, loser = session, target
+
+    spoils = loser.char['gold'] // 4
+    winner.char['gold'] += spoils
+    loser.char['gold'] -= spoils
+    winner.char['kills'] += 1
+
+    winner.log(color(f"Defeated {loser.char['name']}! +{spoils} gold!", GREEN))
+    loser.log(color(f"Defeated by {winner.char['name']}! Lost {spoils} gold!", RED))
+    winner.notify_event.set()
+    loser.notify_event.set()
+
+    save_character(winner.char)
+    save_character(loser.char)

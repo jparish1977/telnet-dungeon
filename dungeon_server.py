@@ -17,7 +17,7 @@ from dungeon.protocol.telnet import TelnetAdapter
 
 from dungeon.world import World
 from dungeon.shop import run_shop
-from dungeon.combat import run_combat, handle_game_over, handle_pvp_death, _bar
+from dungeon.combat import run_combat, run_pvp_combat, handle_game_over, handle_pvp_death, _bar
 from dungeon.menus import (
     title_screen as _title_screen,
     create_character as _create_character,
@@ -46,6 +46,7 @@ class GameSession:
         self.message_log = []
         self.combat_shield_bonus = 0
         self.is_gm = False
+        self._framebuffer = {}  # (row, col) -> string sent there last frame
 
     # ── I/O delegation ────────────────────────────────────────────
     # These delegate to self.io so existing code (self.send, self.get_char, etc.)
@@ -62,6 +63,19 @@ class GameSession:
 
     async def clear_row(self, row):
         await self.io.clear_row(row)
+
+    async def send_at(self, row, col, text):
+        """Send text at a position, but only if it differs from the framebuffer."""
+        key = (row, col)
+        if self._framebuffer.get(key) == text:
+            return  # no change, skip
+        self._framebuffer[key] = text
+        await self.io.move_to(row, col)
+        await self.io.send(text)
+
+    def invalidate_frame(self):
+        """Clear framebuffer to force full redraw next frame."""
+        self._framebuffer.clear()
 
     async def get_input(self, prompt="> ", preserve_spaces=False, prefill=""):
         result = await self.io.get_input(prompt, preserve_spaces, prefill)
@@ -177,6 +191,9 @@ class GameSession:
     async def combat(self, monster_template, allies=None):
         return await run_combat(self, monster_template, allies)
 
+    async def pvp_combat(self, target):
+        return await run_pvp_combat(self, target)
+
     def _bar(self, cur, max_val, width, bar_color):
         return _bar(cur, max_val, width, bar_color)
 
@@ -258,17 +275,22 @@ async def handle_client(reader, writer):
 
 async def handle_ws_client(reader, writer):
     """Handle a WebSocket client connection."""
+    import traceback
+    import sys
     from dungeon.protocol.websocket import WebSocketAdapter
     addr = writer.get_extra_info('peername')
-    print(f"[+] WebSocket from {addr} ({WORLD.player_count()} online)")
-    adapter = WebSocketAdapter(reader, writer)
-    session = GameSession(adapter=adapter)
+    print(f"[+] WebSocket TCP from {addr}", flush=True)
     try:
+        adapter = WebSocketAdapter(reader, writer)
+        print("[WS] Adapter created, negotiating...", flush=True)
+        session = GameSession(adapter=adapter)
         await session.run()
-    except (ConnectionResetError, BrokenPipeError):
-        pass
+    except (ConnectionResetError, BrokenPipeError) as e:
+        print(f"[WS] Connection reset: {e}", flush=True)
     except Exception as e:
-        print(f"[-] WS error with {addr}: {e}")
+        print(f"[-] WS error with {addr}: {e}", flush=True)
+        traceback.print_exc(file=sys.stdout)
+        sys.stdout.flush()
     finally:
         WORLD.remove_player(session)
         print(f"[-] WS disconnected: {addr} ({WORLD.player_count()} online)")
@@ -281,21 +303,135 @@ async def handle_ws_client(reader, writer):
 WS_PORT = PORT + 1  # WebSocket on telnet port + 1
 
 
+WEB_PORT = PORT + 2  # WebSocket (via websockets lib) + static file serving
+
+async def handle_ws_proper(websocket):
+    """Handle a proper WebSocket connection via the websockets library."""
+    addr = websocket.remote_address
+    print(f"[WEB] WebSocket connected from {addr}", flush=True)
+
+    # Create a shim adapter that uses the websockets library
+    from dungeon.protocol.websocket import WebSocketAdapter
+
+    class WsLibAdapter(WebSocketAdapter):
+        """Adapter that wraps the websockets library instead of raw TCP."""
+        def __init__(self, ws):
+            self._ws = ws
+            self._term_width = 120
+            self._term_height = 40
+            self._resized = False
+            self.notify_event = asyncio.Event()
+            self.running = True
+            self._input_queue = asyncio.Queue()
+            self._recv_task = None
+            self._handshake_done = True
+            # These aren't used but needed for the base class
+            self.reader = None
+            self.writer = None
+
+        async def _ws_send(self, data):
+            try:
+                await self._ws.send(data)
+            except Exception:
+                self.running = False
+
+        async def _ws_recv(self):
+            try:
+                return await self._ws.recv()
+            except Exception:
+                return None
+
+        async def negotiate(self):
+            pass  # already connected
+
+        async def close(self):
+            if self._recv_task:
+                self._recv_task.cancel()
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
+
+    adapter = WsLibAdapter(websocket)
+    adapter._recv_task = asyncio.create_task(adapter._recv_loop())
+    session = GameSession(adapter=adapter)
+    try:
+        await session.run()
+    except Exception as e:
+        import traceback as _tb
+        import sys as _sys
+        print(f"[-] WS error: {e}", flush=True)
+        _tb.print_exc(file=_sys.stdout)
+    finally:
+        WORLD.remove_player(session)
+        print(f"[-] WS disconnected: {addr}", flush=True)
+
+
+async def handle_http_request(connection, request):
+    """Serve static files for non-WebSocket HTTP requests.
+    websockets v16+ passes (connection, request)."""
+    import os
+    # Don't intercept WebSocket upgrades
+    if request.headers.get("Upgrade", "").lower() == "websocket":
+        return None
+    path = request.path
+    if path == '/':
+        path = '/index.html'
+    path = path.split('?')[0].replace('\\', '/').replace('..', '')
+
+    web_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web')
+    file_path = os.path.join(web_dir, 'dist', path.lstrip('/'))
+    if not os.path.isfile(file_path):
+        file_path = os.path.join(web_dir, path.lstrip('/'))
+
+    content_types = {
+        '.html': 'text/html', '.js': 'application/javascript',
+        '.css': 'text/css', '.json': 'application/json',
+        '.png': 'image/png', '.jpg': 'image/jpeg',
+        '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+    }
+
+    from websockets.http11 import Response
+    from websockets.datastructures import Headers
+
+    if os.path.isfile(file_path):
+        ext = os.path.splitext(file_path)[1].lower()
+        ct = content_types.get(ext, 'application/octet-stream')
+        with open(file_path, 'rb') as f:
+            body = f.read()
+        return Response(200, "OK", Headers({"Content-Type": ct}), body)
+
+    # Not a static file - let websockets handle WebSocket upgrade
+    return None
+
+
 async def main():
-    server = await asyncio.start_server(handle_client, '0.0.0.0', PORT)
-    ws_server = await asyncio.start_server(handle_ws_client, '0.0.0.0', WS_PORT)
+    import websockets
+    import websockets.asyncio.server
+
+    server = await asyncio.start_server(handle_client, None, PORT)
+    ws_server = await asyncio.start_server(handle_ws_client, None, WS_PORT)
+
+    # Web server: websockets lib handles both HTTP and WS on same port
+    web_ws_server = await websockets.asyncio.server.serve(
+        handle_ws_proper, "", WEB_PORT,
+        process_request=handle_http_request,
+    )
+
     print(f"""
 +---------------------------------------------------+
 |        DUNGEON CRAWLER OF DOOM - BBS Server        |
 +---------------------------------------------------+
 |  Telnet:    localhost:{PORT:<36d}|
 |  WebSocket: localhost:{WS_PORT:<36d}|
+|  Web:       http://localhost:{WEB_PORT:<28d}|
 +---------------------------------------------------+
-""")
-    async with server, ws_server:
+""", flush=True)
+    async with server:
         await asyncio.gather(
             server.serve_forever(),
             ws_server.serve_forever(),
+            web_ws_server.serve_forever(),
         )
 
 

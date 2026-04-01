@@ -62,6 +62,7 @@ A telnet player and a web player can be in the same dungeon, chat, PvP, and co-o
 ## Features (POC - Current)
 
 ### Gameplay
+
 - First-person ASCII 3D dungeon view with colored walls, textured bricks, perspective ground/sky
 - Procedural overworld (128x128) with terrain: grass, forest, mountains, water, roads, towns
 - Infinite procedural dungeon floors (16x16 to 256x256, scaling with depth)
@@ -78,6 +79,7 @@ A telnet player and a web player can be in the same dungeon, chat, PvP, and co-o
 - Per-floor color themes (7 built-in + customizable)
 
 ### Multiplayer
+
 - Multiple simultaneous players in shared world
 - See other players on minimap (green initials)
 - Direction indicators for distant players on same floor
@@ -89,10 +91,12 @@ A telnet player and a web player can be in the same dungeon, chat, PvP, and co-o
 - Duplicate login prevention
 
 ### Game Modes
+
 - **Normal**: Respawn on death at overworld town, lose 20% gold
 - **Hardcore**: Permadeath, save deleted on death, +50% XP and gold
 
 ### GM/Admin System
+
 - GM login with password (default: "dungeon", set via DUNGEON_GM_PASS env var)
 - Teleport to/summon players
 - Edit player stats, inventory, location
@@ -104,6 +108,7 @@ A telnet player and a web player can be in the same dungeon, chat, PvP, and co-o
 - **Viewport Theme Editor**: Per-floor color customization for walls, floors, ceilings, backgrounds
 
 ### Technical
+
 - Pure Python 3, zero dependencies
 - Async telnet server (asyncio)
 - NAWS terminal size detection + resize redraw
@@ -151,6 +156,7 @@ telnet-dungeon/
 ## Roadmap
 
 ### v1.0 - Polish the Telnet Experience
+
 - [ ] In-viewport combat (no screen clear, fight in the log panel)
 - [ ] More overworld content (NPCs, quests, random events)
 - [ ] Inventory system (carry multiple items, equip slots)
@@ -161,6 +167,7 @@ telnet-dungeon/
 - [ ] HTTP status API (JSON game state on a second port for monitoring)
 
 ### v2.0 - Web Frontend (Three.js)
+
 - [ ] WebSocket protocol adapter (same ProtocolAdapter interface as telnet)
 - [ ] JSON game state API (player state, visible tiles, monsters, chat)
 - [ ] Three.js renderer:
@@ -174,6 +181,7 @@ telnet-dungeon/
 - [ ] Cross-play: telnet and web clients in same world
 
 ### v3.0 - Server Federation
+
 Each server instance owns a realm (overworld + dungeons). Dungeon entrances become inter-server portals — step in, your character serializes to JSON and transfers to another host. Step out, you're back where you left.
 
 - [ ] Inter-server transfer protocol (character JSON handoff over TCP)
@@ -183,6 +191,7 @@ Each server instance owns a realm (overworld + dungeons). Dungeon entrances beco
 - [ ] Cross-server chat / announcements
 
 ### v4.0 - Full MUD
+
 - [ ] Scripting engine for quests/NPCs (Lua or Python)
 - [ ] Guild/clan system
 - [ ] Economy (player shops, auction house)
@@ -191,36 +200,38 @@ Each server instance owns a realm (overworld + dungeons). Dungeon entrances beco
 
 ## Configuration
 
-| Env Variable | Default | Description |
-|---|---|---|
+| Env Variable    | Default   | Description       |
+| --------------- | --------- | ----------------- |
 | DUNGEON_GM_PASS | "dungeon" | GM login password |
 
 ## Controls
 
 ### Exploration
-| Key | Action |
-|---|---|
-| W / Up Arrow | Move forward |
-| A / Left Arrow | Turn left |
-| D / Right Arrow | Turn right |
-| S / Down Arrow | Turn around |
-| T | Chat (talk to all players) |
-| C | Character sheet |
-| H | Shop (at stairs up / towns) |
-| P | PvP attack (when player nearby) |
-| R | Drink from fountain |
-| < | Go upstairs / exit dungeon |
-| > | Go downstairs / enter dungeon |
-| / | GM menu (if authenticated) |
-| Q | Save and quit |
+
+| Key             | Action                          |
+| --------------- | ------------------------------- |
+| W / Up Arrow    | Move forward                    |
+| A / Left Arrow  | Turn left                       |
+| D / Right Arrow | Turn right                      |
+| S / Down Arrow  | Turn around                     |
+| T               | Chat (talk to all players)      |
+| C               | Character sheet                 |
+| H               | Shop (at stairs up / towns)     |
+| P               | PvP attack (when player nearby) |
+| R               | Drink from fountain             |
+| <               | Go upstairs / exit dungeon      |
+| >               | Go downstairs / enter dungeon   |
+| /               | GM menu (if authenticated)      |
+| Q               | Save and quit                   |
 
 ### Combat
-| Key | Action |
-|---|---|
-| A | Attack |
-| S | Cast spell |
-| P | Use potion |
-| F | Flee |
+
+| Key | Action     |
+| --- | ---------- |
+| A   | Attack     |
+| S   | Cast spell |
+| P   | Use potion |
+| F   | Flee       |
 
 ## License
 
