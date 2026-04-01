@@ -1,6 +1,6 @@
 # Dungeon Crawler of Doom
 
-A multiplayer dungeon crawler you play over telnet. Pure Python 3, zero dependencies, one file.
+A multiplayer dungeon crawler you play over telnet. Pure Python 3, zero dependencies.
 
 Born from a stray thought while chatting with a teenager who was building a telnet BBS. Six or seven hours later, this existed — first-person ASCII dungeons, wandering monsters, co-op combat, PvP, and a GM toolkit, all running on the same protocol people used to dial into bulletin boards in the '90s.
 
@@ -9,7 +9,7 @@ Telnet-first by design. A Three.js web frontend is planned for cross-play, but t
 ## Quick Start
 
 ```bash
-# Start the server (no dependencies needed - pure Python 3)
+# Start the telnet server (no dependencies needed - pure Python 3)
 python dungeon_server.py [port]
 
 # Default port is 2323
@@ -17,6 +17,9 @@ python dungeon_server.py
 
 # Connect via telnet
 telnet localhost 2323
+
+# Or play locally in your terminal — no telnet needed
+python dungeon_server.py --local
 ```
 
 ## Architecture
@@ -116,13 +119,33 @@ A telnet player and a web player can be in the same dungeon, chat, PvP, and co-o
 
 ```
 telnet-dungeon/
-  dungeon_server.py          # Main server (monolith — splitting into modules is a priority)
-  saves/                     # Character save files (JSON)
-  custom_floors/             # GM-edited floor overrides (JSON)
-  builtin_overrides.json     # Edited built-in monster stats/art
-  custom_monsters.json       # GM-created custom monsters
-  scene_themes.json          # Per-floor viewport color themes
-  banned.json                # Banned player list
+  dungeon_server.py              # Entry point + thin GameSession shell (~290 lines)
+  dungeon/                       # Game engine package (18 modules)
+    config.py                    # Constants, ANSI colors, tile codes
+    items.py                     # Weapons, armor, spells, character classes
+    persistence.py               # All JSON file I/O (saves, bans, themes)
+    floor.py                     # Dungeon generation, overworld, caching
+    monsters.py                  # Monster definitions, scaling, wandering AI
+    character.py                 # Stat validation, leveling helpers
+    combat.py                    # PvE combat, PvP duels, death handling
+    shop.py                      # Shop interaction + town teleport
+    menus.py                     # Title screen, character creation/loading
+    session.py                   # Main game loop, screen rendering
+    world.py                     # Shared world state, player registry
+    renderer_3d.py               # First-person 3D viewport engine
+    renderer_minimap.py          # Minimap renderer
+    protocol/
+      base.py                    # Abstract protocol adapter interface
+      telnet.py                  # Telnet I/O (IAC, NAWS, ANSI)
+      stdio.py                   # Local terminal adapter (--local mode)
+    gm/
+      tools.py                   # GM tools (player admin, editors)
+  saves/                         # Character save files (JSON)
+  custom_floors/                 # GM-edited floor overrides (JSON)
+  quests/                        # Quest definitions (JSON)
+  builtin_overrides.json         # Edited built-in monster stats/art
+  custom_monsters.json           # GM-created custom monsters
+  scene_themes.json              # Per-floor viewport color themes
 ```
 
 ## Roadmap
