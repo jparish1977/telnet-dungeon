@@ -16,7 +16,11 @@ SGA  = bytes([3])  # Suppress Go Ahead
 NAWS = bytes([31]) # Window size
 LINEMODE = bytes([34])
 
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 2323
+PORT = 2323
+for _arg in sys.argv[1:]:
+    if _arg.isdigit():
+        PORT = int(_arg)
+        break
 
 # ── ANSI helpers ───────────────────────────────────────────────────
 CSI = "\033["
