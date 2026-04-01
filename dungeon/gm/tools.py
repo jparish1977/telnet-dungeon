@@ -671,7 +671,6 @@ async def gm_viewport_theme_editor(session):
 
         # Show color preview for each element
         await session.send_line(color("  Foreground colors:", WHITE))
-        list(COLOR_NAMES.keys())
         for i, elem in enumerate(elements):
             cur = themes[floor_key].get(elem, "default")
             code = COLOR_NAMES.get(cur, "37")
@@ -741,6 +740,7 @@ async def gm_viewport_theme_editor(session):
         elif cmd == 'r':
             if floor_key in themes:
                 del themes[floor_key]
+            themes[floor_key] = {}
             save_scene_themes(themes)
             session.log(color("Theme reset to default!", YELLOW))
 
