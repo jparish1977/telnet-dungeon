@@ -51,8 +51,8 @@ WORLD = World()
 
 # ── Game Session ───────────────────────────────────────────────────
 class GameSession:
-    def __init__(self, reader, writer):
-        self.io = TelnetAdapter(reader, writer)
+    def __init__(self, reader=None, writer=None, adapter=None):
+        self.io = adapter if adapter else TelnetAdapter(reader, writer)
         self.char = None
         self.running = True
         self.message_log = []
@@ -2468,11 +2468,27 @@ async def main():
         await server.serve_forever()
 
 
+async def local_play():
+    """Run a single-player session locally — no telnet needed."""
+    from dungeon.protocol.stdio import StdioAdapter
+    adapter = StdioAdapter()
+    session = GameSession(adapter=adapter)
+    try:
+        await session.run()
+    except (EOFError, KeyboardInterrupt):
+        pass
+    finally:
+        WORLD.remove_player(session)
+
+
 if __name__ == '__main__':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
     try:
-        asyncio.run(main())
+        if '--local' in sys.argv:
+            asyncio.run(local_play())
+        else:
+            asyncio.run(main())
     except KeyboardInterrupt:
         print("\nServer shut down.")
