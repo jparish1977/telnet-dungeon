@@ -422,6 +422,15 @@ async def draw_game_screen(session, world):
 
 async def run_main_loop(session, world):
     """Main exploration loop."""
+    # Load correct region segment on login
+    if session.char.get('floor') == OVERWORLD_FLOOR:
+        from dungeon.region import load_segment, get_current_segment, get_segment_display_name
+        from dungeon.floor import set_overworld
+        col, row = get_current_segment(session.char)
+        seg = load_segment(col, row)
+        if seg:
+            set_overworld(seg)
+
     # Apply quest map modifications for any active quests
     apply_all_active_mods(session.char)
     # Validate position on entry (catches old saves, wall spawns, etc)
