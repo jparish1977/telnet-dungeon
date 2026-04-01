@@ -1,0 +1,193 @@
+{
+  "id": "bookeater_gyre",
+  "name": "The Bookeater Gyre",
+  "description": "Rescue Book Eater and Hobbles from the depths of Heck.",
+  "lore": [
+    "Book Eater was a brave kitty, bold and fearless.",
+    "He was defeated not by fang or claw, but by a garden plant",
+    "whose poison claimed him before anyone could act.",
+    "",
+    "Years passed. The ache of missing him never faded.",
+    "",
+    "His brother Hobbles, loyal to the end, ventured into",
+    "the depths of Heck to find him. Hobbles was brave,",
+    "but the depths are no place for a cat alone.",
+    "He too was lost to all.",
+    "",
+    "Ginger would not have it. This would not stand.",
+    "She gathered her companions, her coven, and set forth",
+    "to rescue them both.",
+    "",
+    "The Bookeater Gyre awaits. Bring them home."
+  ],
+  "npcs": {
+    "hobbles": {
+      "name": "Hobbles",
+      "description": "A scraggly but determined cat, trapped on floor 5. He limps but his eyes burn with purpose.",
+      "art": [
+        "     /\\_/\\     ",
+        "    ( o.o )    ",
+        "     > . <     ",
+        "    /|   |\\    ",
+        "   / |   | \\   ",
+        "  *  |   |     ",
+        "     /   \\     ",
+        "    / ~~  \\    "
+      ],
+      "dialog": [
+        "Hobbles: *mrrrow* ... you came...",
+        "Hobbles: Book Eater... he's deeper. I can feel him.",
+        "Hobbles: The Poisoned Garden... floor 8. That's where it took him.",
+        "Hobbles: I tried to reach him but... *limps* ...I couldn't make it alone.",
+        "Hobbles: Please. Bring my brother home."
+      ],
+      "floor": 5,
+      "found_flag": "hobbles_found"
+    },
+    "bookeater": {
+      "name": "Book Eater",
+      "description": "A spectral cat, luminous and still. He sits among poisoned flowers, waiting.",
+      "art": [
+        "   *  /\\_/\\  * ",
+        "  *  ( O.O )  *",
+        "     (> w <)   ",
+        "   *  |   | *  ",
+        "  ~~~~~~~~~~~  ",
+        "  ~ FLOWERS  ~ ",
+        "  ~~~~~~~~~~~  "
+      ],
+      "dialog_before_hobbles": [
+        "A faint shimmer... you see a cat sitting among dead flowers.",
+        "Book Eater: ...who?",
+        "Book Eater: I've been here so long. The flowers... they never stop blooming.",
+        "Book Eater: Hobbles? Is Hobbles here? He came looking for me...",
+        "Book Eater: I won't leave without my brother."
+      ],
+      "dialog_with_hobbles": [
+        "Book Eater: *MRRROW!* HOBBLES!",
+        "Hobbles: *purring intensifies*",
+        "The two cats nuzzle. The poisoned flowers begin to wilt.",
+        "Book Eater: ...we can go? We can really go?",
+        "Book Eater: Ginger sent you. Of course she did.",
+        "The spectral glow fades. Book Eater is warm again.",
+        "Book Eater has been rescued!"
+      ],
+      "floor": 8,
+      "found_flag": "bookeater_found",
+      "requires": "hobbles_found"
+    },
+    "ginger": {
+      "name": "Ginger",
+      "description": "The quest giver. She stands at the overworld town, resolute.",
+      "art": [
+        "     .---.     ",
+        "    ( o  o )   ",
+        "     \\  ^ /    ",
+        "    --|--|--   ",
+        "   /  |  |  \\  ",
+        "  /   |  |   \\ ",
+        "  *  /    \\  * "
+      ],
+      "dialog_start": [
+        "Ginger: They're down there. Both of them.",
+        "Ginger: Book Eater... he was taken by poison. A garden plant.",
+        "Ginger: Hobbles went after him. Brave, stupid, loyal Hobbles.",
+        "Ginger: Neither came back.",
+        "Ginger: I need you to go into the depths. Find Hobbles first -",
+        "Ginger: he'll know where Book Eater is.",
+        "Ginger: Bring them home. Please.",
+        "",
+        "  [Quest accepted: The Bookeater Gyre]"
+      ],
+      "dialog_hobbles_found": [
+        "Ginger: You found Hobbles! Is he okay?",
+        "Ginger: Floor 8... the Poisoned Garden. That's where Book Eater fell.",
+        "Ginger: Go. Bring him back. Bring them both back."
+      ],
+      "dialog_complete": [
+        "Ginger: ...",
+        "Ginger: *tears*",
+        "Ginger: You brought them home.",
+        "Ginger: Both of them. After all this time.",
+        "Ginger: Thank you. Thank you thank you thank you.",
+        "",
+        "Hobbles purrs at Ginger's feet.",
+        "Book Eater headbutts your ankle.",
+        "The coven is whole again.",
+        "",
+        "  [Quest complete: The Bookeater Gyre]",
+        "  [Reward: 1000 gold, Ginger's Blessing (+5 all stats)]"
+      ],
+      "floor": -1,
+      "location": "town"
+    }
+  },
+  "boss": {
+    "name": "The Verdant Blight",
+    "description": "The poisonous garden spirit that claimed Book Eater. It guards floor 8.",
+    "hp": 120,
+    "atk": 22,
+    "def": 8,
+    "xp": 200,
+    "gold": 150,
+    "art": [
+      "    \\ | | /    ",
+      "   --=====--   ",
+      "  / /|   |\\ \\  ",
+      " / / | @ | \\ \\ ",
+      "  /  |   |  \\  ",
+      " /  /|\\^/|\\  \\ ",
+      "    / | | \\    ",
+      "   /  | |  \\   ",
+      "  ~~~~===~~~~  ",
+      "  ~POISONED~   ",
+      "  ~~~GARDEN~~  "
+    ],
+    "floor": 8,
+    "poison_chance": 50,
+    "dialog": [
+      "The flowers writhe and twist into a towering form.",
+      "Verdant Blight: ANOTHER ONE FOR MY GARDEN...",
+      "Verdant Blight: THE CATS WERE JUST THE BEGINNING.",
+      "Verdant Blight: YOU WILL BLOOM HERE FOREVER."
+    ]
+  },
+  "rewards": {
+    "gold": 1000,
+    "blessing": {
+      "name": "Ginger's Blessing",
+      "atk_bonus": 5,
+      "def_bonus": 5,
+      "spd_bonus": 5,
+      "hp_bonus": 50,
+      "mp_bonus": 20
+    }
+  },
+  "stages": [
+    {
+      "id": "start",
+      "trigger": "talk_to_ginger",
+      "description": "Talk to Ginger in the overworld town to begin the quest."
+    },
+    {
+      "id": "find_hobbles",
+      "trigger": "reach_floor_5_hobbles",
+      "description": "Find Hobbles on floor 5. He's been searching for his brother."
+    },
+    {
+      "id": "defeat_blight",
+      "trigger": "kill_verdant_blight_floor_8",
+      "description": "Defeat the Verdant Blight on floor 8 to free the Poisoned Garden."
+    },
+    {
+      "id": "rescue_bookeater",
+      "trigger": "talk_to_bookeater_with_hobbles_found",
+      "description": "Find Book Eater in the Poisoned Garden after defeating the Blight."
+    },
+    {
+      "id": "return",
+      "trigger": "return_to_ginger",
+      "description": "Return to Ginger with both cats rescued."
+    }
+  ]
+}
