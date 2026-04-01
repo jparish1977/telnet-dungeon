@@ -1,7 +1,9 @@
 """Shop interaction — buy weapons, armor, and potions."""
 
-from dungeon.config import CLEAR, RED, GREEN, YELLOW, WHITE, color
-from dungeon.items import WEAPONS, ARMOR
+from dungeon.config import CLEAR, RED, GREEN, YELLOW, CYAN, WHITE, color, OVERWORLD_FLOOR
+from dungeon.items import WEAPONS, ARMOR, SOUTH
+from dungeon.persistence import save_character
+from dungeon.floor import get_overworld_spawn
 
 
 async def run_shop(session):
@@ -15,9 +17,12 @@ async def run_shop(session):
         await session.send_line(f"  Current Weapon: {WEAPONS[char['weapon']]['name']}")
         await session.send_line(f"  Current Armor:  {ARMOR[char['armor']]['name']}")
         await session.send_line()
+        town_option = ""
+        if char['floor'] != OVERWORLD_FLOOR:
+            town_option = f"  {color('[T]', CYAN)}own"
         await session.send_line(
             f"  {color('[W]', YELLOW)}eapons  {color('[A]', YELLOW)}rmor  "
-            f"{color('[P]', YELLOW)}otions  {color('[L]', YELLOW)}eave"
+            f"{color('[P]', YELLOW)}otions{town_option}  {color('[L]', YELLOW)}eave"
         )
 
         choice = (await session.get_char("  Choice: ")).upper()
@@ -91,6 +96,20 @@ async def run_shop(session):
                     session.log(color("Not enough gold!", RED))
             except ValueError:
                 pass
+
+        elif choice == 'T' and char['floor'] != OVERWORLD_FLOOR:
+            await session.send_line()
+            confirm = await session.get_char(
+                color("  Return to town? You'll lose your dungeon position. (Y/N) ", YELLOW)
+            )
+            if confirm.upper() == 'Y':
+                char['floor'] = OVERWORLD_FLOOR
+                char['x'] = get_overworld_spawn()[0]
+                char['y'] = get_overworld_spawn()[1]
+                char['facing'] = SOUTH
+                save_character(char)
+                session.log(color("Teleported to town!", CYAN))
+                break
 
         elif choice == 'L':
             break

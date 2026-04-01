@@ -8,7 +8,7 @@ from dungeon.config import (
 )
 from dungeon.items import WEAPONS, ARMOR, SPELLS, SOUTH
 from dungeon.persistence import save_character, delete_save
-from dungeon.floor import get_overworld_spawn
+from dungeon.floor import get_floor_spawn
 
 
 def _bar(cur, max_val, width, bar_color):
@@ -407,14 +407,16 @@ async def handle_game_over(session):
         gold_lost = char['gold'] // 5
         char['gold'] -= gold_lost
         char['hp'] = char['max_hp'] // 2
-        char['floor'] = OVERWORLD_FLOOR
-        char['x'] = get_overworld_spawn()[0]
-        char['y'] = get_overworld_spawn()[1]
+        # Respawn at stairs-up on same floor
+        sx, sy = get_floor_spawn(char['floor'])
+        char['x'] = sx
+        char['y'] = sy
         char['facing'] = SOUTH
         char['poisoned'] = False
         save_character(char)
 
-        await session.send_line(color(f"  Lost {gold_lost} gold. Respawning at entrance...", DIM))
+        floor_name = "the overworld" if char['floor'] == OVERWORLD_FLOOR else f"floor {char['floor'] + 1}"
+        await session.send_line(color(f"  Lost {gold_lost} gold. Respawning on {floor_name}...", DIM))
         await session.send_line()
         await session.get_char(color("  Press any key to try again...", DIM))
 
@@ -449,13 +451,14 @@ async def handle_pvp_death(session, killer_name):
     await session.send_line()
 
     char['hp'] = char['max_hp'] // 2
-    char['floor'] = OVERWORLD_FLOOR
-    char['x'] = get_overworld_spawn()[0]
-    char['y'] = get_overworld_spawn()[1]
+    # Respawn at stairs-up on same floor
+    sx, sy = get_floor_spawn(char['floor'])
+    char['x'] = sx
+    char['y'] = sy
     char['facing'] = SOUTH
     char['poisoned'] = False
     save_character(char)
 
-    await session.send_line(color("  Respawning at dungeon entrance...", GREEN))
+    await session.send_line(color("  Respawning at stairs...", GREEN))
     await session.send_line()
     await session.get_char(color("  Press any key to get back in there...", DIM))
