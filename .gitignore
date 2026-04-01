@@ -2,3 +2,6 @@ saves/*.json
 banned.json
 __pycache__/
 *.pyc
+web/node_modules/
+web/dist/
+*.ppm

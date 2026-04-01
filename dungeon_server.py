@@ -256,19 +256,47 @@ async def handle_client(reader, writer):
             pass
 
 
+async def handle_ws_client(reader, writer):
+    """Handle a WebSocket client connection."""
+    from dungeon.protocol.websocket import WebSocketAdapter
+    addr = writer.get_extra_info('peername')
+    print(f"[+] WebSocket from {addr} ({WORLD.player_count()} online)")
+    adapter = WebSocketAdapter(reader, writer)
+    session = GameSession(adapter=adapter)
+    try:
+        await session.run()
+    except (ConnectionResetError, BrokenPipeError):
+        pass
+    except Exception as e:
+        print(f"[-] WS error with {addr}: {e}")
+    finally:
+        WORLD.remove_player(session)
+        print(f"[-] WS disconnected: {addr} ({WORLD.player_count()} online)")
+        try:
+            writer.close()
+        except Exception:
+            pass
+
+
+WS_PORT = PORT + 1  # WebSocket on telnet port + 1
+
+
 async def main():
     server = await asyncio.start_server(handle_client, '0.0.0.0', PORT)
-    addrs = ', '.join(str(s.getsockname()) for s in server.sockets)
+    ws_server = await asyncio.start_server(handle_ws_client, '0.0.0.0', WS_PORT)
     print(f"""
 +---------------------------------------------------+
 |        DUNGEON CRAWLER OF DOOM - BBS Server        |
 +---------------------------------------------------+
-|  Listening on: {addrs:36s}|
-|  Connect: telnet localhost {PORT:<24d}|
+|  Telnet:    localhost:{PORT:<36d}|
+|  WebSocket: localhost:{WS_PORT:<36d}|
 +---------------------------------------------------+
 """)
-    async with server:
-        await server.serve_forever()
+    async with server, ws_server:
+        await asyncio.gather(
+            server.serve_forever(),
+            ws_server.serve_forever(),
+        )
 
 
 async def local_play():
