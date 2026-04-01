@@ -215,6 +215,10 @@ class GameSession:
                 await self.send_line(color("\nFarewell, adventurer!\n", CYAN))
                 break
 
+            elif choice == '/':
+                # GM tools without a character
+                await self.gm_menu()
+
             elif choice == 'N':
                 await self.create_character()
                 WORLD.add_player(self)

@@ -58,17 +58,22 @@ async def title_screen(session, world):
             await session.send_line()
             return choice
         if choice == 'G':
+            if session.is_gm:
+                # Already authenticated — go straight to GM menu
+                return '/'
             await session.send_line()
             pw = await session.get_input("GM Password: ")
             if pw == GM_PASSWORD:
                 session.is_gm = True
                 await session.send_line(
-                    color("GM access granted! Use [/] in-game for GM menu.", GREEN)
+                    color("GM access granted!", GREEN)
                 )
+                await session.get_char("Press any key...")
+                return '/'
             else:
                 await session.send_line(color("Wrong password.", RED))
-            await session.get_char("Press any key...")
-            return 'G'
+                await session.get_char("Press any key...")
+                return 'G'
 
 
 async def create_character(session, world):

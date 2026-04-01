@@ -3,7 +3,7 @@
 import asyncio
 
 from dungeon.config import (
-    CSI, CLEAR, DIM, RESET, RED, GREEN, YELLOW, WHITE, MAGENTA,
+    CSI, CLEAR, DIM, RESET, RED, GREEN, YELLOW, CYAN, WHITE, MAGENTA,
     color, COLOR_NAMES, BG_COLOR_NAMES,
     OW_GRASS, OW_FOREST, OW_MOUNTAIN, OW_WATER, OW_ROAD, OW_TOWN, OW_DUNGEON,
 )
@@ -44,27 +44,42 @@ async def gm_pick_player(session, world, prompt="Pick player: "):
         pass
     return None
 
+async def _pick_floor(session, label="Floor"):
+    """Prompt for a floor number. Returns int or None."""
+    inp = await session.get_input(f"  {label} (0+ or -1=overworld): ")
+    try:
+        return int(inp)
+    except ValueError:
+        return None
+
+
 async def gm_menu(session, world):
-    """Full GM/moderator menu."""
+    """Full GM/moderator menu. Works with or without a character loaded."""
+    has_char = session.char is not None
     while True:
         await session.send(CLEAR)
         await session.send_line(color("=== GAME MASTER MENU ===", MAGENTA))
+        if not has_char:
+            await session.send_line(color("  (No character loaded — editor mode)", DIM))
         await session.send_line()
-        await session.send_line(f"  {color('[1]', YELLOW)} Teleport to player")
-        await session.send_line(f"  {color('[2]', YELLOW)} Teleport player to me")
+        if has_char:
+            await session.send_line(f"  {color('[1]', YELLOW)} Teleport to player")
+            await session.send_line(f"  {color('[2]', YELLOW)} Teleport player to me")
         await session.send_line(f"  {color('[3]', YELLOW)} Edit player stats")
         await session.send_line(f"  {color('[4]', YELLOW)} Edit player inventory")
-        await session.send_line(f"  {color('[5]', YELLOW)} Set player location")
+        if has_char:
+            await session.send_line(f"  {color('[5]', YELLOW)} Set player location")
         await session.send_line(f"  {color('[6]', YELLOW)} Kick player")
         await session.send_line(f"  {color('[7]', YELLOW)} Ban player")
         await session.send_line(f"  {color('[8]', YELLOW)} Unban player")
         await session.send_line(f"  {color('[9]', YELLOW)} Broadcast message")
         await session.send_line(f"  {color('[0]', YELLOW)} List all players")
-        await session.send_line(f"  {color('[F]', YELLOW)} Teleport to floor")
+        if has_char:
+            await session.send_line(f"  {color('[F]', YELLOW)} Teleport to floor")
         await session.send_line(f"  {color('[M]', YELLOW)} Monster editor")
         await session.send_line(f"  {color('[E]', YELLOW)} Map tile editor")
         await session.send_line(f"  {color('[V]', YELLOW)} Viewport theme editor")
-        await session.send_line(f"  {color('[B]', YELLOW)} Back to game")
+        await session.send_line(f"  {color('[B]', YELLOW)} Back")
         await session.send_line()
 
         choice = (await session.get_char("  GM> ")).upper()
@@ -72,7 +87,7 @@ async def gm_menu(session, world):
         if choice == 'B':
             break
 
-        elif choice == '1':
+        elif choice == '1' and has_char:
             # Teleport TO a player
             await session.send_line()
             target = await gm_pick_player(session, world, "Go to: ")
@@ -84,7 +99,7 @@ async def gm_menu(session, world):
                 save_character(session.char)
                 break
 
-        elif choice == '2':
+        elif choice == '2' and has_char:
             # Teleport player TO me
             await session.send_line()
             target = await gm_pick_player(session, world, "Summon: ")
@@ -178,7 +193,7 @@ async def gm_menu(session, world):
                     except ValueError:
                         pass
 
-        elif choice == '5':
+        elif choice == '5' and has_char:
             # Set player location
             await session.send_line()
             target = await gm_pick_player(session, world, "Move: ")
@@ -289,7 +304,7 @@ async def gm_menu(session, world):
             await session.send_line()
             await session.get_char(color("  Press any key...", DIM))
 
-        elif choice == 'F':
+        elif choice == 'F' and has_char:
             # Teleport to floor
             await session.send_line()
             fl_input = await session.get_input(f"  Floor number (1-{MAX_FLOOR+1}): ")
@@ -313,11 +328,13 @@ async def gm_menu(session, world):
             await gm_monster_editor(session, world)
 
         elif choice == 'E':
-            await gm_scene_editor(session, world)
+            floor = session.char['floor'] if has_char else 0
+            await gm_scene_editor(session, world, floor)
             break  # back to game to see changes
 
         elif choice == 'V':
-            await gm_viewport_theme_editor(session)
+            floor = session.char['floor'] if has_char else 0
+            await gm_viewport_theme_editor(session, floor)
             break
 
 def _col_label(c):
@@ -625,8 +642,8 @@ async def gm_monster_editor(session, world):
             except (ValueError, IndexError):
                 pass
 
-        elif ch == 'S':
-            # Spawn any monster - built-in + custom
+        elif ch == 'S' and session.char:
+            # Spawn any monster - requires a character (need position + floor)
             await session.send_line()
             all_spawnable = get_monsters_for_floor(session.char['floor'])
             all_spawnable = all_spawnable + customs
@@ -649,10 +666,12 @@ async def gm_monster_editor(session, world):
                     session.log(color(f"Spawned {mob['name']} at [{mob['x']},{mob['y']}]!", GREEN))
             except (ValueError, IndexError):
                 pass
+        elif ch == 'S' and not session.char:
+            await session.send_line(color("  Need a character to spawn monsters.", DIM))
+            await session.get_char("  Press any key...")
 
-async def gm_viewport_theme_editor(session):
+async def gm_viewport_theme_editor(session, floor=0):
     """Edit the 3D viewport colors and textures for floors."""
-    floor = session.char['floor']
     themes = load_scene_themes()
     floor_key = str(floor)
 
@@ -699,12 +718,30 @@ async def gm_viewport_theme_editor(session):
         await session.send_line(palette)
 
         await session.send_line()
-        await session.send_line(f"  {color('[P]', YELLOW)} Preview  {color('[S]', YELLOW)} Save  {color('[R]', YELLOW)} Reset  {color('[Q]', YELLOW)} Back")
+        await session.send_line(
+            f"  {color('[<]', CYAN)} Prev floor  {color('[>]', CYAN)} Next floor  "
+            f"{color('[P]', YELLOW)} Preview  {color('[S]', YELLOW)} Save  "
+            f"{color('[R]', YELLOW)} Reset  {color('[Q]', YELLOW)} Back"
+        )
 
         cmd = (await session.get_char("  > ")).lower()
 
         if cmd == 'q':
             break
+
+        elif cmd in ('<', ','):
+            floor = max(-1, floor - 1)
+            floor_key = str(floor)
+            if floor_key not in themes:
+                themes[floor_key] = {}
+            continue
+
+        elif cmd in ('>', '.'):
+            floor = min(MAX_FLOOR, floor + 1)
+            floor_key = str(floor)
+            if floor_key not in themes:
+                themes[floor_key] = {}
+            continue
 
         elif cmd in '1234567':
             idx = int(cmd) - 1
@@ -769,12 +806,14 @@ def _tile_render(t, is_ow_floor):
         }
         return mapping.get(t, f"{CSI}90m?{RESET}")
 
-async def gm_scene_editor(session, world):
+async def gm_scene_editor(session, world, floor=0):
     """Full-screen visual tile editor with cursor."""
-    floor = session.char['floor']
     dungeon = get_floor(floor)
     size = len(dungeon)
-    cx, cy = session.char['x'], session.char['y']
+    if session.char:
+        cx, cy = session.char['x'], session.char['y']
+    else:
+        cx, cy = size // 2, size // 2
     is_ow_floor = is_overworld(floor)
 
     tile_names = {
@@ -854,7 +893,7 @@ async def gm_scene_editor(session, world):
 
             # Help row
             await session.move_to(th, 1)
-            await session.send(f" {color('WASD', YELLOW)}move {color('P', YELLOW)}aint {color('1-7', YELLOW)}brush {color('F', YELLOW)}ill {color('G', YELLOW)}rid size {color('X', YELLOW)}save {color('Q', YELLOW)}uit")
+            await session.send(f" {color('WASD', YELLOW)}move {color('P', YELLOW)}aint {color('1-7', YELLOW)}brush {color('F', YELLOW)}ill {color('G', YELLOW)}rid {color('<>', CYAN)}floor {color('X', YELLOW)}save {color('Q', YELLOW)}uit")
 
             needs_full_redraw = False
         else:
@@ -875,6 +914,56 @@ async def gm_scene_editor(session, world):
 
         if cmd == 'q':
             break
+
+        elif cmd in ('<', ','):
+            # Previous floor
+            floor = max(-1, floor - 1)
+            dungeon = get_floor(floor)
+            size = len(dungeon)
+            is_ow_floor = is_overworld(floor)
+            cx = min(cx, size - 1)
+            cy = min(cy, size - 1)
+            if is_ow_floor:
+                brushes = [OW_GRASS, OW_FOREST, OW_MOUNTAIN, OW_WATER, OW_ROAD, OW_TOWN, OW_DUNGEON]
+                tile_names = {
+                    OW_GRASS: "Grass", OW_FOREST: "Forest", OW_MOUNTAIN: "Mount",
+                    OW_WATER: "Water", OW_ROAD: "Road", OW_TOWN: "Town",
+                    OW_DUNGEON: "Dung.E",
+                }
+            else:
+                brushes = [0, 1, 2, 3, 4, 5, 6]
+                tile_names = {
+                    0: "Floor", 1: "Wall", 2: "Door", 3: "StairsD",
+                    4: "StairsU", 5: "Treas", 6: "Fount",
+                }
+            brush_idx = 0
+            needs_full_redraw = True
+            continue
+
+        elif cmd in ('>', '.'):
+            # Next floor
+            floor = min(MAX_FLOOR, floor + 1)
+            dungeon = get_floor(floor)
+            size = len(dungeon)
+            is_ow_floor = is_overworld(floor)
+            cx = min(cx, size - 1)
+            cy = min(cy, size - 1)
+            if is_ow_floor:
+                brushes = [OW_GRASS, OW_FOREST, OW_MOUNTAIN, OW_WATER, OW_ROAD, OW_TOWN, OW_DUNGEON]
+                tile_names = {
+                    OW_GRASS: "Grass", OW_FOREST: "Forest", OW_MOUNTAIN: "Mount",
+                    OW_WATER: "Water", OW_ROAD: "Road", OW_TOWN: "Town",
+                    OW_DUNGEON: "Dung.E",
+                }
+            else:
+                brushes = [0, 1, 2, 3, 4, 5, 6]
+                tile_names = {
+                    0: "Floor", 1: "Wall", 2: "Door", 3: "StairsD",
+                    4: "StairsU", 5: "Treas", 6: "Fount",
+                }
+            brush_idx = 0
+            needs_full_redraw = True
+            continue
 
         elif cmd in ('w', 'a', 's', 'd'):
             dx = {'a': -1, 'd': 1}.get(cmd, 0)
@@ -996,7 +1085,8 @@ async def gm_scene_editor(session, world):
             await asyncio.sleep(0.5)
             needs_full_redraw = True
 
-    session.char['x'] = cx
-    session.char['y'] = cy
-    save_character(session.char)
+    if session.char:
+        session.char['x'] = cx
+        session.char['y'] = cy
+        save_character(session.char)
 
