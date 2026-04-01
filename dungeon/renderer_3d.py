@@ -163,11 +163,19 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
                     view[r][lc] = '|'
             prev_lc = depths[depth-1][0] if depth > 0 else 0
             if is_ow and raw_l == OW_MOUNTAIN:
-                # Mountain side
+                # Mountain side — tapers toward the top
+                height = br - tr
                 for r in range(tr, br+1):
-                    for c in range(prev_lc, lc):
+                    progress = (r - tr) / max(1, height)
+                    slope_w = int(progress * (lc - prev_lc))
+                    for c in range(lc - slope_w, lc):
                         if 0 <= r < H and 0 <= c < W:
-                            view[r][c] = '^' if (r+c) % 3 == 0 else 'n'
+                            if r < tr + 2:
+                                view[r][c] = '*'
+                            elif c == lc - slope_w:
+                                view[r][c] = '/'
+                            else:
+                                view[r][c] = '^' if (r+c) % 3 == 0 else 'n'
             elif is_ow and raw_l == OW_WATER:
                 for r in range(tr, br+1):
                     for c in range(prev_lc, lc):
@@ -191,10 +199,19 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
                     view[r][rc] = '|'
             prev_rc = depths[depth-1][1] if depth > 0 else W-1
             if is_ow and raw_r == OW_MOUNTAIN:
+                # Mountain side — tapers toward the top
+                height = br - tr
                 for r in range(tr, br+1):
-                    for c in range(rc+1, prev_rc+1):
+                    progress = (r - tr) / max(1, height)
+                    slope_w = int(progress * (prev_rc - rc))
+                    for c in range(rc+1, rc+1+slope_w):
                         if 0 <= r < H and 0 <= c < W:
-                            view[r][c] = '^' if (r+c) % 3 == 0 else 'n'
+                            if r < tr + 2:
+                                view[r][c] = '*'
+                            elif c == rc + slope_w:
+                                view[r][c] = '\\'
+                            else:
+                                view[r][c] = '^' if (r+c) % 3 == 0 else 'n'
             elif is_ow and raw_r == OW_WATER:
                 for r in range(tr, br+1):
                     for c in range(rc+1, prev_rc+1):
