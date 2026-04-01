@@ -20,6 +20,7 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
     # Initialize viewport with spaces
     view = [[' ' for _ in range(W)] for _ in range(H)]
     mob_mask = [[False for _ in range(W)] for _ in range(H)]  # tracks monster pixels
+    wall_mask = [[False for _ in range(W)] for _ in range(H)]  # tracks wall/structure pixels
 
     is_ow = (floor_num == OVERWORLD_FLOOR)
 
@@ -110,17 +111,20 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
         for c in range(c1, c2+1):
             if 0 <= row < H and 0 <= c < W:
                 view[row][c] = ch
+                wall_mask[row][c] = True
 
     def draw_vline(col, r1, r2, ch='#'):
         for r in range(r1, r2+1):
             if 0 <= r < H and 0 <= col < W:
                 view[r][col] = ch
+                wall_mask[r][col] = True
 
     def fill_rect(r1, c1, r2, c2, ch):
         for r in range(r1, r2+1):
             for c in range(c1, c2+1):
                 if 0 <= r < H and 0 <= c < W:
                     view[r][c] = ch
+                    wall_mask[r][c] = True
 
     def fill_brick(r1, c1, r2, c2, depth_idx):
         """Fill with textured brick pattern based on depth."""
@@ -129,6 +133,7 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
             for c in range(c1, c2+1):
                 if 0 <= r < H and 0 <= c < W:
                     view[r][c] = pat(r, c)
+                    wall_mask[r][c] = True
 
     def fill_side(r1, c1, r2, c2, depth_idx):
         """Fill side walls with textured pattern."""
@@ -137,6 +142,7 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
             for c in range(c1, c2+1):
                 if 0 <= r < H and 0 <= c < W:
                     view[r][c] = pat(r, c)
+                    wall_mask[r][c] = True
 
     # Draw from far to near
     for depth in range(3, -1, -1):
@@ -655,25 +661,26 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
 
             # Set background based on zone and content (uses theme overrides)
             if is_ow:
-                if ch in ('`', '.') and above_horizon:
+                if wall_mask[ri][ci]:
+                    if ch == '~':
+                        bg = theme_water_bg
+                    elif ch == '*':
+                        bg = f"{CSI}47m"  # snow
+                    else:
+                        bg = theme_wall_bg
+                elif ch in ('`', '.') and above_horizon:
                     bg = theme_sky_bg
                 elif ch == '_' and at_horizon:
                     bg = theme_ground_bg
                 elif ch in (';', ',', '.') and not above_horizon:
                     bg = theme_ground_bg
-                elif ch == '~':
-                    bg = theme_water_bg
-                elif ch in ('^', 'n'):
-                    bg = theme_wall_bg
-                elif ch == '*':
-                    bg = f"{CSI}47m"  # snow = white bg
             else:
-                if ch in ('`', '.') and above_horizon:
-                    bg = theme_sky_bg
-                elif ch in ('.', ',') and not above_horizon:
-                    bg = theme_ground_bg
-                elif ch == ':' and not above_horizon:
+                if wall_mask[ri][ci]:
                     bg = theme_wall_bg
+                elif ch in ('`', '.') and above_horizon:
+                    bg = theme_sky_bg
+                elif ch in ('.', ':', ',') and not above_horizon:
+                    bg = theme_ground_bg
                 elif ch == '#':
                     bg = theme_wall_bg
                 elif ch == '~':
