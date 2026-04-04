@@ -1,0 +1,10 @@
+{
+  "1": {
+    "floor": "bright_yellow",
+    "ground_bg": "cyan"
+  },
+  "0": {
+    "floor": "red",
+    "ground_bg": "red"
+  }
+}
