@@ -1,0 +1,17 @@
+{
+  "id": "quest_seg_0_4",
+  "name": "Tales of Stevensville",
+  "description": "Adventures in the Stevensville area.",
+  "entrances": [],
+  "quest_floors": {},
+  "npcs": {},
+  "stages": [
+    {
+      "id": "started",
+      "description": "Explore."
+    }
+  ],
+  "rewards": {
+    "gold": 500
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "quest_hagar_shores",
+  "name": "Tales of Hagar Shores",
+  "description": "Explore the Hagar Shores region.",
+  "entrances": [],
+  "quest_floors": {},
+  "npcs": {},
+  "stages": [
+    {
+      "id": "started",
+      "description": "Begin exploring."
+    },
+    {
+      "id": "complete",
+      "description": "Region explored."
+    }
+  ],
+  "rewards": {
+    "gold": 500
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "quest_seg_0_3",
+  "name": "Tales of Bridgman",
+  "description": "Adventures in the Bridgman area.",
+  "entrances": [],
+  "quest_floors": {},
+  "npcs": {},
+  "stages": [
+    {
+      "id": "started",
+      "description": "Explore."
+    }
+  ],
+  "rewards": {
+    "gold": 500
+  }
+}
