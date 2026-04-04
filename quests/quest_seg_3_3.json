@@ -1,0 +1,17 @@
+{
+  "id": "quest_seg_3_3",
+  "name": "Tales of Berrien Springs",
+  "description": "Adventures in the Berrien Springs area.",
+  "entrances": [],
+  "quest_floors": {},
+  "npcs": {},
+  "stages": [
+    {
+      "id": "started",
+      "description": "Explore."
+    }
+  ],
+  "rewards": {
+    "gold": 500
+  }
+}

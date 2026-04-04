@@ -1,0 +1,21 @@
+{
+  "id": "quest_coloma_south",
+  "name": "Tales of Coloma South",
+  "description": "Explore the Coloma South region.",
+  "entrances": [],
+  "quest_floors": {},
+  "npcs": {},
+  "stages": [
+    {
+      "id": "started",
+      "description": "Begin exploring."
+    },
+    {
+      "id": "complete",
+      "description": "Region explored."
+    }
+  ],
+  "rewards": {
+    "gold": 500
+  }
+}

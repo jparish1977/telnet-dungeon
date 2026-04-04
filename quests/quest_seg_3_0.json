@@ -1,0 +1,17 @@
+{
+  "id": "quest_seg_3_0",
+  "name": "Tales of Buchanan",
+  "description": "Adventures in the Buchanan area.",
+  "entrances": [],
+  "quest_floors": {},
+  "npcs": {},
+  "stages": [
+    {
+      "id": "started",
+      "description": "Explore."
+    }
+  ],
+  "rewards": {
+    "gold": 500
+  }
+}
