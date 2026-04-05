@@ -153,6 +153,10 @@ telnet-dungeon/
   scene_themes.json              # Per-floor viewport color themes
 ```
 
+## Stories
+
+The world of Dungeon Crawler of Doom has rich lore and background stories. See [stories/README.md](stories/README.md) for a collection of in-world legends and histories.
+
 ## Roadmap
 
 ### v1.0 - Polish the Telnet Experience
