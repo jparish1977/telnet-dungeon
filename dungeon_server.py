@@ -403,8 +403,8 @@ async def handle_http_request(connection, request):
             body = f.read()
         return Response(200, "OK", Headers({"Content-Type": ct}), body)
 
-    # Not a static file - let websockets handle WebSocket upgrade
-    return None
+    # No matching file — return 404 instead of falling through to WebSocket upgrade
+    return Response(404, "Not Found", Headers({"Content-Type": "text/plain"}), b"404 Not Found")
 
 
 async def main():
