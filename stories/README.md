@@ -5,6 +5,7 @@ Each file explores a different legend, character, or region in the game.
 
 ## Story Index
 
+- [Background of Dungeon Crawler of Doom](background.md)
 - [Origin of Doom](origin_of_doom.md)
 - [Rise of the Shadow Lords](rise_of_the_shadow_lords.md)
 - [The Lost Kingdom of Buchanan](the_lost_kingdom_of_buchanan.md)
