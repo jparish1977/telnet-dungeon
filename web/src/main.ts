@@ -14,8 +14,11 @@ const TERMINAL_ROWS = 50;
 const MAX_LOG_MESSAGES = 100;
 const STATUS_POLL_MS = 1000;
 
-// Same origin: page and WebSocket served from same port
-const WS_URL = `ws://${window.location.host}`;
+// WebSocket URL: data attribute > protocol-aware default
+const container = document.getElementById("app");
+const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+const WS_URL =
+  container?.dataset.wsUrl || `${wsProto}//${window.location.host}`;
 
 // Init
 const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;

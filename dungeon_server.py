@@ -241,16 +241,20 @@ class GameSession:
             elif choice == 'N':
                 await self.create_character()
                 WORLD.add_player(self)
-                WORLD.broadcast(f"{self.char['name']} has entered the dungeon!", GREEN, exclude=self)
-                await self.main_loop()
-                WORLD.remove_player(self)
+                try:
+                    WORLD.broadcast(f"{self.char['name']} has entered the dungeon!", GREEN, exclude=self)
+                    await self.main_loop()
+                finally:
+                    WORLD.remove_player(self)
 
             elif choice == 'L':
                 if await self.load_character_menu():
                     WORLD.add_player(self)
-                    WORLD.broadcast(f"{self.char['name']} has returned to the dungeon!", GREEN, exclude=self)
-                    await self.main_loop()
-                    WORLD.remove_player(self)
+                    try:
+                        WORLD.broadcast(f"{self.char['name']} has returned to the dungeon!", GREEN, exclude=self)
+                        await self.main_loop()
+                    finally:
+                        WORLD.remove_player(self)
 
         await self.io.close()
 
@@ -282,6 +286,8 @@ async def handle_ws_client(reader, writer):
     from dungeon.protocol.websocket import WebSocketAdapter
     addr = writer.get_extra_info('peername')
     print(f"[+] WebSocket TCP from {addr}", flush=True)
+    session = None
+    adapter = None
     try:
         adapter = WebSocketAdapter(reader, writer)
         print("[WS] Adapter created, negotiating...", flush=True)
@@ -294,7 +300,10 @@ async def handle_ws_client(reader, writer):
         traceback.print_exc(file=sys.stdout)
         sys.stdout.flush()
     finally:
-        WORLD.remove_player(session)
+        if session:
+            WORLD.remove_player(session)
+        if adapter:
+            await adapter.close()
         print(f"[-] WS disconnected: {addr} ({WORLD.player_count()} online)")
         try:
             writer.close()
@@ -366,6 +375,7 @@ async def handle_ws_proper(websocket):
         _tb.print_exc(file=_sys.stdout)
     finally:
         WORLD.remove_player(session)
+        await adapter.close()
         print(f"[-] WS disconnected: {addr}", flush=True)
 
 
