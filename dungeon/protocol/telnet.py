@@ -17,6 +17,7 @@ class TelnetAdapter(ProtocolAdapter):
         self._resized = False
         self.notify_event = asyncio.Event()
         self.running = True
+        self._leftover = None  # byte pushed back by get_char's newline drain
 
     @property
     def term_width(self) -> int:
@@ -33,6 +34,14 @@ class TelnetAdapter(ProtocolAdapter):
     @resized.setter
     def resized(self, value: bool):
         self._resized = value
+
+    async def _read1(self, timeout=300):
+        """Read one byte, returning any leftover from get_char's newline drain first."""
+        if self._leftover is not None:
+            b = self._leftover
+            self._leftover = None
+            return b
+        return await asyncio.wait_for(self.reader.read(1), timeout=timeout)
 
     async def send(self, text: str):
         text = text.replace('\r\n', '\n').replace('\n', '\r\n')
@@ -97,7 +106,7 @@ class TelnetAdapter(ProtocolAdapter):
 
         while True:
             try:
-                byte = await asyncio.wait_for(self.reader.read(1), timeout=300)
+                byte = await self._read1(timeout=300)
             except asyncio.TimeoutError:
                 await self.send_line("\r\nConnection timed out. Farewell!")
                 self.running = False
@@ -126,6 +135,9 @@ class TelnetAdapter(ProtocolAdapter):
                             data += next_byte
                     except asyncio.TimeoutError:
                         pass
+                # Ignore stale \r\n left in buffer from a previous get_char call
+                if not data:
+                    continue
                 await self.send("\r\n")
                 result = data.decode('utf-8', errors='ignore')
                 return result.rstrip() if preserve_spaces else result.strip()
@@ -230,9 +242,54 @@ class TelnetAdapter(ProtocolAdapter):
             if byte in (b'\r', b'\n'):
                 return '\r'
             if 32 <= byte[0] < 127:
+                # Drain trailing \r/\n from line-mode telnet clients
+                for _ in range(2):
+                    try:
+                        peek = await asyncio.wait_for(self.reader.read(1), timeout=0.05)
+                        if peek not in (b'\r', b'\n'):
+                            # Real data — leave it for the next read by storing it
+                            self._leftover = peek
+                            break
+                    except asyncio.TimeoutError:
+                        break
                 return byte.decode('utf-8', errors='ignore')
 
         return ''
+
+    async def _query_terminal_size(self):
+        """Fallback: query terminal size via ANSI cursor position report.
+        Works on terminals that don't support NAWS (e.g. Git Bash/mintty)."""
+        # Save cursor, move to bottom-right corner, request cursor position, restore
+        self.writer.write(b"\0337\033[999;999H\033[6n\0338")
+        await self.writer.drain()
+        # Read response: ESC [ rows ; cols R
+        buf = b""
+        try:
+            while True:
+                b = await asyncio.wait_for(self.reader.read(1), timeout=0.5)
+                if not b:
+                    break
+                buf += b
+                if b == b'R':
+                    break
+        except asyncio.TimeoutError:
+            return
+        # Parse \033[rows;colsR
+        resp = buf.decode('ascii', errors='ignore')
+        start = resp.find('\033[')
+        if start == -1 or not resp.endswith('R'):
+            return
+        inner = resp[start + 2:-1]  # "rows;cols"
+        parts = inner.split(';')
+        if len(parts) == 2:
+            try:
+                h, w = int(parts[0]), int(parts[1])
+                w = max(40, min(200, w))
+                h = max(16, min(80, h))
+                self._term_width = w
+                self._term_height = h
+            except ValueError:
+                pass
 
     async def negotiate(self):
         """Perform telnet negotiation: enable echo, SGA, request NAWS."""
@@ -252,6 +309,10 @@ class TelnetAdapter(ProtocolAdapter):
                     await self._handle_iac()
         except asyncio.TimeoutError:
             pass
+
+        # If NAWS didn't work (still at defaults), try ANSI cursor position query
+        if self._term_width == 80 and self._term_height == 24:
+            await self._query_terminal_size()
 
     async def close(self):
         try:

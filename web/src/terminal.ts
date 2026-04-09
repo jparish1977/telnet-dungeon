@@ -5,6 +5,11 @@
  * Three.js 3D renderer will come later.
  */
 
+const DEFAULT_FG = "#33ff33";
+const MIN_FONT_SIZE = 10;
+const LINE_HEIGHT_RATIO = 1.2;
+const TEXT_Y_OFFSET = 1;
+
 const ANSI_COLORS: Record<string, string> = {
   "30": "#000000",
   "31": "#cc0000",
@@ -42,11 +47,6 @@ const ANSI_BG_COLORS: Record<string, string> = {
   "106": "#33ffff",
   "107": "#ffffff",
 };
-
-const MIN_FONT_SIZE = 10;
-const LINE_HEIGHT_RATIO = 1.2;
-const TEXT_Y_OFFSET = 1;
-const DEFAULT_FG = DEFAULT_FG;
 
 interface Cell {
   char: string;
