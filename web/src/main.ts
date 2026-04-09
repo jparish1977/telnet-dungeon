@@ -14,11 +14,15 @@ const TERMINAL_ROWS = 50;
 const MAX_LOG_MESSAGES = 100;
 const STATUS_POLL_MS = 1000;
 
-// WebSocket URL: data attribute > protocol-aware default
+// WebSocket URL: data attribute > path-based detection > same-origin root
+// When served under /dungeon/ (Apache alias), connect to /dungeon/ws (proxied).
+// When served standalone on port 2325, connect to root.
 const container = document.getElementById("app");
 const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+const path = window.location.pathname;
+const dungeonPrefix = path.startsWith("/dungeon") ? "/dungeon/ws" : "";
 const WS_URL =
-  container?.dataset.wsUrl || `${wsProto}//${window.location.host}`;
+  container?.dataset.wsUrl || `${wsProto}//${window.location.host}${dungeonPrefix}`;
 
 // Init
 const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
