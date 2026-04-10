@@ -582,6 +582,21 @@ async def run_main_loop(session, world):
                         del target._pvp_response
             continue
 
+        elif cmd == 'l':
+            # Look — text description of surroundings
+            from dungeon.gm.map_ops import look_text
+            text = look_text(floor, px, py, facing)
+            from dungeon.config import CLEAR, MAGENTA, DIM
+            await session.send(CLEAR)
+            await session.send_line(color("=== LOOK ===", MAGENTA))
+            for line in text.split('\n'):
+                await session.send_line(f"  {line}")
+            await session.send_line()
+            await session.get_char(color("  Press any key...", DIM))
+            session.invalidate_frame()
+            await session.send(CLEAR)
+            continue
+
         elif cmd == 'c':
             await session.character_screen()
             continue

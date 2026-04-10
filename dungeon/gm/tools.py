@@ -80,6 +80,9 @@ async def gm_menu(session, world):
         await session.send_line(f"  {color('[M]', YELLOW)} Monster editor")
         await session.send_line(f"  {color('[E]', YELLOW)} Map tile editor")
         await session.send_line(f"  {color('[V]', YELLOW)} Viewport theme editor")
+        if has_char:
+            await session.send_line(f"  {color('[L]', YELLOW)} Look (text surroundings)")
+            await session.send_line(f"  {color('[X]', YELLOW)} Export map as ASCII")
         await session.send_line(f"  {color('[B]', YELLOW)} Back")
         await session.send_line()
 
@@ -378,6 +381,36 @@ async def gm_menu(session, world):
                         session.log(color("Segment not found!", RED))
             except ValueError:
                 pass
+
+        elif choice == 'L' and has_char:
+            # Look — text description of surroundings
+            from dungeon.gm.map_ops import look_text
+            text = look_text(
+                session.char['floor'],
+                session.char['x'], session.char['y'],
+                session.char['facing'],
+            )
+            await session.send(CLEAR)
+            await session.send_line(color("=== LOOK ===", MAGENTA))
+            for line in text.split('\n'):
+                await session.send_line(f"  {line}")
+            await session.send_line()
+            await session.get_char(color("  Press any key...", DIM))
+
+        elif choice == 'X' and has_char:
+            # Export map as ASCII
+            from dungeon.gm.map_ops import export_map_ascii
+            header, lines, legend = export_map_ascii(session.char['floor'])
+            await session.send(CLEAR)
+            await session.send_line(color(f"=== MAP EXPORT: {header} ===", MAGENTA))
+            await session.send_line()
+            for line in lines:
+                await session.send_line(f"  {line}")
+            await session.send_line()
+            legend_str = "  Legend: " + "  ".join(f"{ch}={name}" for ch, name in legend.items())
+            await session.send_line(color(legend_str, DIM))
+            await session.send_line()
+            await session.get_char(color("  Press any key...", DIM))
 
         elif choice == 'M':
             await gm_monster_editor(session, world)
