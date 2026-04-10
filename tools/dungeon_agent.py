@@ -352,38 +352,109 @@ def run_cartographer(col, row, model, host, port, spectate=False, dry_run=False)
     return True
 
 
+# ── Guild pipeline ────────────────────────────────────────────────
+
+def run_guild(floors_start, floors_end, model, host, port, verbose=False):
+    """Full guild pipeline: craftsman scans → architect plans → apprentice builds."""
+    from dungeon.guild.craftsman import Craftsman
+    from dungeon.guild.architect import Architect
+    from dungeon.guild.apprentice import Apprentice
+    from dungeon.guild.jobs import get_stats
+
+    mason = Craftsman(name="Mason")
+    architect = Architect(model=model, host=host, port=port)
+    hodge = Apprentice(name="Hodge")
+
+    # Phase 1: Craftsman patrols
+    print(f"\n=== PHASE 1: CRAFTSMAN PATROL (floors {floors_start}-{floors_end}) ===")
+    mason.patrol_floors(floors_start, floors_end, verbose=verbose)
+    stats = get_stats()
+    print(f"\n  Queue: {stats}")
+
+    if stats['by_status'].get('pending', 0) == 0:
+        print("\n  No issues found. The dungeon is perfect!")
+        return
+
+    # Phase 2: Architect consults LLM
+    print(f"\n=== PHASE 2: ARCHITECT PLANNING ({model} @ {host}:{port}) ===")
+    planned = architect.process_all(verbose=verbose)
+    stats = get_stats()
+    print(f"\n  Planned {planned} jobs. Queue: {stats}")
+
+    if stats['by_status'].get('planned', 0) == 0:
+        print("\n  Architect couldn't plan any jobs.")
+        return
+
+    # Phase 3: Apprentice executes
+    print(f"\n=== PHASE 3: APPRENTICE BUILDING ===")
+    built = hodge.execute_all(verbose=verbose)
+    stats = get_stats()
+    print(f"\n  Built {built} jobs. Queue: {stats}")
+    print(f"\n  {mason.status()}")
+    print(f"  {architect.status()}")
+    print(f"  {hodge.status()}")
+
+
+def run_craftsman_only(floors_start, floors_end, verbose=False):
+    """Just scan — no LLM, no building. See what the craftsman finds."""
+    from dungeon.guild.craftsman import Craftsman
+    from dungeon.guild.jobs import get_stats
+
+    mason = Craftsman(name="Mason")
+    mason.patrol_floors(floors_start, floors_end, verbose=verbose)
+    stats = get_stats()
+    print(f"\nQueue: {stats}")
+
+
 # ── Main ──────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description="Dungeon Agent — LLM-powered GM")
-    parser.add_argument('mode', choices=['architect', 'cartographer'],
-                        help="Agent mode")
-    parser.add_argument('--floor', type=int, default=None,
-                        help="Dungeon floor number (architect mode)")
-    parser.add_argument('--floor-range', type=str, default=None,
-                        help="Floor range, e.g. 3-20 (architect batch mode)")
-    parser.add_argument('--segment', type=str, default=None,
-                        help="Overworld segment col,row (cartographer mode)")
-    parser.add_argument('--all-segments', action='store_true',
-                        help="Process all overworld segments")
-    parser.add_argument('--model', type=str, default='qwen3:14b',
-                        help="Ollama model name")
-    parser.add_argument('--host', type=str, default='localhost',
-                        help="Ollama host")
-    parser.add_argument('--port', type=int, default=11434,
-                        help="Ollama port")
-    parser.add_argument('--spectate', action='store_true',
-                        help="Show maps and LLM responses in real-time")
-    parser.add_argument('--dry-run', action='store_true',
-                        help="Show what would be done without applying changes")
+    sub = parser.add_subparsers(dest='mode', required=True)
+
+    # Legacy direct modes (still work)
+    p_arch = sub.add_parser('architect', help="Direct LLM floor improvement")
+    p_arch.add_argument('--floor', type=int)
+    p_arch.add_argument('--floor-range', type=str)
+
+    p_cart = sub.add_parser('cartographer', help="Direct LLM overworld fix")
+    p_cart.add_argument('--segment', type=str)
+    p_cart.add_argument('--all-segments', action='store_true')
+
+    # Guild system (craftsman → architect → apprentice)
+    p_guild = sub.add_parser('guild', help="Full guild pipeline: scan → plan → build")
+    p_guild.add_argument('--floor-range', type=str, default='0-10',
+                         help="Floor range to patrol, e.g. 0-20")
+
+    p_scan = sub.add_parser('scan', help="Craftsman scan only — find issues, no LLM")
+    p_scan.add_argument('--floor-range', type=str, default='0-10',
+                        help="Floor range to patrol")
+
+    p_plan = sub.add_parser('plan', help="Architect only — process pending jobs with LLM")
+
+    p_build = sub.add_parser('build', help="Apprentice only — execute planned jobs")
+
+    p_status = sub.add_parser('status', help="Show guild job queue status")
+
+    # Shared args
+    for p in [p_arch, p_cart, p_guild, p_plan]:
+        p.add_argument('--model', type=str, default='qwen3:14b')
+        p.add_argument('--host', type=str, default='localhost')
+        p.add_argument('--port', type=int, default=11434)
+
+    for p in [p_arch, p_cart, p_guild, p_scan, p_plan, p_build]:
+        p.add_argument('--spectate', action='store_true',
+                       help="Verbose output")
+
+    for p in [p_arch, p_cart]:
+        p.add_argument('--dry-run', action='store_true')
+
     args = parser.parse_args()
 
     if args.mode == 'architect':
         if args.floor_range:
             start, end = args.floor_range.split('-')
-            floors = range(int(start), int(end) + 1)
-            print(f"[Architect] Batch mode: floors {start}-{end}")
-            for f in floors:
+            for f in range(int(start), int(end) + 1):
                 run_architect(f, args.model, args.host, args.port,
                               args.spectate, args.dry_run)
         elif args.floor is not None:
@@ -405,6 +476,38 @@ def main():
                              args.spectate, args.dry_run)
         else:
             parser.error("cartographer mode requires --segment or --all-segments")
+
+    elif args.mode == 'guild':
+        start, end = args.floor_range.split('-')
+        run_guild(int(start), int(end), args.model, args.host, args.port,
+                  verbose=args.spectate)
+
+    elif args.mode == 'scan':
+        start, end = args.floor_range.split('-')
+        run_craftsman_only(int(start), int(end), verbose=args.spectate)
+
+    elif args.mode == 'plan':
+        from dungeon.guild.architect import Architect
+        arch = Architect(model=args.model, host=args.host, port=args.port)
+        count = arch.process_all(verbose=args.spectate)
+        print(f"\nPlanned {count} jobs.")
+
+    elif args.mode == 'build':
+        from dungeon.guild.apprentice import Apprentice
+        hodge = Apprentice(name="Hodge")
+        count = hodge.execute_all(verbose=args.spectate)
+        print(f"\nBuilt {count} jobs.")
+
+    elif args.mode == 'status':
+        from dungeon.guild.jobs import get_stats, _load_jobs
+        stats = get_stats()
+        print(f"\nGuild Queue: {json.dumps(stats, indent=2)}")
+        jobs = _load_jobs()
+        for j in jobs[-20:]:
+            status_icon = {'pending': '?', 'claimed': '~', 'planned': '!',
+                           'in_progress': '>', 'done': '+', 'failed': 'X'}
+            icon = status_icon.get(j['status'], '?')
+            print(f"  [{icon}] #{j['id']} {j['type']} floor={j['floor']} — {j.get('context', '')[:60]}")
 
 
 if __name__ == '__main__':
