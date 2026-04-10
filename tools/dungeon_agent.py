@@ -53,6 +53,7 @@ def ollama_chat(messages, model="qwen3:14b", host="localhost", port=11434,
         "model": model,
         "messages": messages,
         "stream": False,
+        "format": "json",
         "options": {
             "temperature": temperature,
             "num_ctx": num_ctx,
