@@ -62,7 +62,7 @@ def ollama_chat(messages, model="qwen3:14b", host="localhost", port=11434,
     req = urllib.request.Request(url, data=data,
                                 headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=300) as resp:
+        with urllib.request.urlopen(req, timeout=600) as resp:
             result = json.loads(resp.read().decode('utf-8'))
             return result.get('message', {}).get('content', '')
     except urllib.error.URLError as e:
