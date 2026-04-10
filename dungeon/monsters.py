@@ -5,20 +5,15 @@ import random
 from dungeon.persistence import load_custom_monsters, load_builtin_overrides
 from dungeon.floor import get_floor
 
-# Quest floor ID -> quest floor key mapping
-_QUEST_FLOOR_MAP = {
-    90000: ('bookeater_gyre', 'gyre_1'),
-    90001: ('bookeater_gyre', 'gyre_2'),
-}
-
 
 def _get_quest_floor_monsters(floor_num):
     """Get monsters defined in quest JSON for a quest floor."""
-    if floor_num not in _QUEST_FLOOR_MAP:
+    from dungeon.quests import get_quest_floor_info, load_quest
+    info = get_quest_floor_info(floor_num)
+    if info is None:
         return None
-    quest_id, floor_key = _QUEST_FLOOR_MAP[floor_num]
+    quest_id, floor_key = info
     try:
-        from dungeon.quests import load_quest
         quest = load_quest(quest_id)
         if not quest:
             return None
@@ -75,8 +70,8 @@ def get_monsters_for_floor(floor_num):
     if floor_num in MONSTERS_BY_FLOOR:
         return MONSTERS_BY_FLOOR[floor_num] + floor_customs
 
-    # Quest floors (90000+) — check for quest-defined monsters first
-    if floor_num >= 90000:
+    # Quest floors — check for quest-defined monsters first
+    if floor_num >= 90000:  # QUEST_FLOOR_BASE
         quest_monsters = _get_quest_floor_monsters(floor_num)
         if quest_monsters:
             return quest_monsters + floor_customs

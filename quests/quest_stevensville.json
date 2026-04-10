@@ -1,0 +1,145 @@
+{
+  "id": "quest_stevensville",
+  "name": "The Lincoln Highway Ghost",
+  "description": "A phantom car on the old Red Arrow Highway is causing real accidents.",
+  "lore": [
+    "The Red Arrow Highway was the main road before I-94.",
+    "A phantom car \u2014 headlights, engine, but no car \u2014",
+    "has been running the highway at midnight."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_0_4",
+      "x": 126,
+      "y": 38,
+      "visible_if": "quest_stage >= started",
+      "label": "Lincoln Highway Tunnel",
+      "target_floor": "highway_tunnel"
+    }
+  ],
+  "quest_floors": {
+    "highway_tunnel": {
+      "name": "Lincoln Highway Tunnel",
+      "size": 18,
+      "theme": "gray",
+      "difficulty": 2,
+      "description": "A crumbling concrete tunnel under the railroad.",
+      "monsters": [
+        {
+          "name": "Road Ghost",
+          "hp": 12,
+          "atk": 5,
+          "def": 2,
+          "xp": 10,
+          "gold": 5,
+          "art": [
+            "  o o",
+            " /~~~\\",
+            "  ~~~"
+          ]
+        },
+        {
+          "name": "Hubcap Mimic",
+          "hp": 18,
+          "atk": 6,
+          "def": 4,
+          "xp": 14,
+          "gold": 8,
+          "art": [
+            "  .--.",
+            " / () \\",
+            "  '--'"
+          ]
+        },
+        {
+          "name": "Exhaust Wraith",
+          "hp": 15,
+          "atk": 7,
+          "def": 2,
+          "xp": 12,
+          "gold": 6,
+          "art": [
+            "  ~~~",
+            " ~~~~",
+            "  ~~~"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "mechanic": {
+      "name": "Dave",
+      "description": "Quest giver in The Lincoln Highway Ghost.",
+      "floor": "seg_0_4",
+      "x": 124,
+      "y": 35,
+      "location": "town",
+      "symbol": "D",
+      "art": [
+        "  .---.",
+        " ( o.o )",
+        "  \\   /",
+        " [MECH]",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Dave: Saw it again last night. Headlights, engine, the whole deal.",
+        "Dave: It's coming from the old Lincoln Highway tunnel.",
+        "Dave: Under the railroad. Been sealed since the '60s.",
+        "",
+        "  [Quest accepted: The Lincoln Highway Ghost]"
+      ],
+      "dialog_complete": [
+        "Dave: No phantom car last night. First quiet night in weeks.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Phantom Driver",
+    "description": "Boss of Lincoln Highway Tunnel.",
+    "floor": "highway_tunnel",
+    "x": 9,
+    "y": 9,
+    "hp": 70,
+    "atk": 14,
+    "def": 5,
+    "xp": 100,
+    "gold": 80,
+    "art": [
+      "  O====O====O  ",
+      " /    ____   \\ ",
+      "| O  |    | O |",
+      "   (O)  (O)    "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "Headlights blaze. A 1932 Ford materializes.",
+      "Driver: ALMOST HOME. ALMOST THERE.",
+      "Driver: WHY WON'T THE ROAD END?"
+    ]
+  },
+  "rewards": {
+    "gold": 500,
+    "blessing": {
+      "name": "Road Runner",
+      "spd_bonus": 4
+    }
+  },
+  "stages": [
+    {
+      "id": "started",
+      "description": "Talk to Dave."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Phantom Driver."
+    },
+    {
+      "id": "complete",
+      "description": "Return to Dave."
+    }
+  ]
+}

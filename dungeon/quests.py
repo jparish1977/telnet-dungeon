@@ -12,8 +12,12 @@ from dungeon.persistence import save_character
 
 QUESTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "quests")
 
+QUEST_FLOOR_BASE = 90000
+
 # ── Quest data cache ──────────────────────────────────────────────
 _quest_cache = {}
+_quest_floor_map = None  # floor_num -> (quest_id, floor_key)
+_quest_floor_reverse = None  # floor_key -> floor_num
 
 
 def load_quest(quest_id):
@@ -34,6 +38,41 @@ def list_quests():
     if not os.path.isdir(QUESTS_DIR):
         return []
     return [f[:-5] for f in os.listdir(QUESTS_DIR) if f.endswith('.json')]
+
+
+def _build_quest_floor_maps():
+    """Scan all quests and assign stable floor numbers to quest_floors.
+
+    Each quest_floor key gets a deterministic number based on sorted order
+    so the mapping is stable across restarts."""
+    global _quest_floor_map, _quest_floor_reverse
+    _quest_floor_map = {}
+    _quest_floor_reverse = {}
+    floor_num = QUEST_FLOOR_BASE
+    for quest_id in sorted(list_quests()):
+        quest = load_quest(quest_id)
+        if not quest:
+            continue
+        for floor_key in sorted(quest.get('quest_floors', {})):
+            _quest_floor_map[floor_num] = (quest_id, floor_key)
+            _quest_floor_reverse[floor_key] = floor_num
+            floor_num += 1
+
+
+def get_quest_floor_num(floor_key):
+    """Get the numeric floor ID for a quest floor key like 'gyre_1'."""
+    global _quest_floor_reverse
+    if _quest_floor_reverse is None:
+        _build_quest_floor_maps()
+    return _quest_floor_reverse.get(floor_key)
+
+
+def get_quest_floor_info(floor_num):
+    """Get (quest_id, floor_key) for a numeric quest floor ID."""
+    global _quest_floor_map
+    if _quest_floor_map is None:
+        _build_quest_floor_maps()
+    return _quest_floor_map.get(floor_num)
 
 
 # ── Player quest state ────────────────────────────────────────────
@@ -67,7 +106,7 @@ def get_quest_stage(char, quest_id):
 def set_quest_stage(char, quest_id, stage):
     """Set the current stage for a quest."""
     set_quest_flag(char, quest_id, 'stage', stage)
-    apply_map_modifications(quest_id, stage)
+    apply_map_modifications(quest_id, stage, char)
 
 
 def is_quest_active(char, quest_id):
@@ -95,15 +134,17 @@ def apply_all_active_mods(char):
                 for s in quest.get('stages', []):
                     sid = s['id']
                     # Apply all mods for stages up to current
-                    apply_map_modifications(quest_id, sid)
+                    apply_map_modifications(quest_id, sid, char)
                     if sid == stage:
                         break
 
 
-def apply_map_modifications(quest_id, stage):
+def apply_map_modifications(quest_id, stage, char=None):
     """Apply map modifications for a quest stage.
     Modifications are defined in the quest JSON under 'map_mods'.
-    Each mod has a trigger stage and a list of tile changes."""
+    Each mod has a trigger stage and a list of tile changes.
+    If a mod has a 'region' field, it only applies when the player
+    is on that segment."""
     from dungeon.floor import get_floor
 
     if (quest_id, stage) in _applied_mods:
@@ -117,6 +158,13 @@ def apply_map_modifications(quest_id, stage):
     for mod in quest.get('map_mods', []):
         if mod.get('trigger') != stage:
             continue
+        # Region check: skip if mod is pinned to a segment and player isn't there
+        mod_region = mod.get('region')
+        if mod_region and char:
+            from dungeon.region import get_current_segment, get_segment_name
+            col, row = get_current_segment(char)
+            if get_segment_name(col, row) != mod_region:
+                continue
         target_floor = mod.get('floor', OVERWORLD_FLOOR)
         floor_grid = get_floor(target_floor)
         changes = mod.get('tiles', [])
@@ -124,10 +172,35 @@ def apply_map_modifications(quest_id, stage):
             x, y, tile = change['x'], change['y'], change['tile']
             if 0 <= y < len(floor_grid) and 0 <= x < len(floor_grid[0]):
                 floor_grid[y][x] = tile
-        print(f"[QUEST] Applied {len(changes)} tile changes to floor {target_floor}", flush=True)
+        if changes:
+            print(f"[QUEST] Applied {len(changes)} tile changes to floor {target_floor}", flush=True)
 
 
 # ── Quest entrances (per-player visibility) ───────────────────────
+
+def _floor_matches(ent_floor, floor_num, char, region=None):
+    """Check if an entrance/NPC floor matches the player's current floor.
+
+    Handles numeric floors (e.g. -1, 3), region segment strings
+    (e.g. 'seg_0_4'), and an optional 'region' field that pins
+    floor -1 entries to a specific segment."""
+    from dungeon.region import get_current_segment, get_segment_name
+
+    # Region segment match: entrance is on a named segment, player is on overworld
+    if isinstance(ent_floor, str) and ent_floor.startswith('seg_') and floor_num == OVERWORLD_FLOOR:
+        col, row = get_current_segment(char)
+        return get_segment_name(col, row) == ent_floor
+
+    if ent_floor != floor_num:
+        return False
+
+    # Floor matches numerically. If a region constraint exists, check it too.
+    if region and floor_num == OVERWORLD_FLOOR:
+        col, row = get_current_segment(char)
+        return get_segment_name(col, row) == region
+
+    return True
+
 
 def get_visible_entrances(char, floor_num):
     """Get quest entrances visible to this player on this floor.
@@ -138,9 +211,9 @@ def get_visible_entrances(char, floor_num):
         if not quest:
             continue
         for entrance in quest.get('entrances', []):
-            # Check floor match
+            # Check floor match (supports numeric floors and region segments)
             ent_floor = entrance.get('floor', OVERWORLD_FLOOR)
-            if ent_floor != floor_num:
+            if not _floor_matches(ent_floor, floor_num, char, entrance.get('region')):
                 continue
             # Check visibility condition
             if not _check_condition(char, quest_id, entrance.get('visible_if', 'true')):
@@ -196,7 +269,7 @@ def get_npcs_on_floor(char, quest_id, floor_num):
     npcs = []
     for npc_id, npc in quest.get('npcs', {}).items():
         npc_floor = npc.get('floor', OVERWORLD_FLOOR)
-        if npc_floor != floor_num:
+        if not _floor_matches(npc_floor, floor_num, char, npc.get('region')):
             continue
         # Check if NPC should be visible based on quest state
         requires = npc.get('requires')
@@ -239,7 +312,7 @@ def get_all_visible_npcs(char, floor_num):
             if is_quest_complete(char, quest_id) and not is_quest_giver:
                 continue
             npc_floor = npc.get('floor', OVERWORLD_FLOOR)
-            if npc_floor != floor_num:
+            if not _floor_matches(npc_floor, floor_num, char, npc.get('region')):
                 continue
             # Check requires flag
             requires = npc.get('requires')

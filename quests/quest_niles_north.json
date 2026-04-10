@@ -1,21 +1,147 @@
 {
   "id": "quest_niles_north",
-  "name": "Tales of Niles North",
-  "description": "Explore the Niles North region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Brandywine Falls",
+  "description": "The waterfall has stopped falling. The water hangs frozen in mid-air.",
+  "lore": [
+    "Brandywine Creek has a beautiful waterfall north of Niles.",
+    "Last Thursday, the water stopped. Not froze. Stopped.",
+    "Hanging in mid-air. Warm. Wet. But it won't fall."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_5_1",
+      "x": 61,
+      "y": 68,
+      "visible_if": "quest_stage >= started",
+      "label": "Behind the Falls",
+      "target_floor": "falls_cave"
+    }
+  ],
+  "quest_floors": {
+    "falls_cave": {
+      "name": "Behind the Falls",
+      "size": 16,
+      "theme": "blue",
+      "difficulty": 3,
+      "description": "A cave of impossible stillness. Water hangs like curtains.",
+      "monsters": [
+        {
+          "name": "Time Eddy",
+          "hp": 16,
+          "atk": 8,
+          "def": 2,
+          "xp": 14,
+          "gold": 8,
+          "art": [
+            "  @@@",
+            " @   @",
+            "  @@@"
+          ]
+        },
+        {
+          "name": "Still Water",
+          "hp": 20,
+          "atk": 6,
+          "def": 5,
+          "xp": 16,
+          "gold": 10,
+          "art": [
+            "  ===",
+            " | . |",
+            "  ==="
+          ]
+        },
+        {
+          "name": "Creek Sprite",
+          "hp": 12,
+          "atk": 9,
+          "def": 2,
+          "xp": 12,
+          "gold": 6,
+          "art": [
+            "  ~.~",
+            " (~.~)",
+            "  ~.~"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "hiker": {
+      "name": "Jamie",
+      "description": "Quest giver in The Brandywine Falls.",
+      "floor": "seg_5_1",
+      "x": 63,
+      "y": 64,
+      "location": "town",
+      "symbol": "J",
+      "art": [
+        "  .---.",
+        " ( O.O )",
+        "  \\ o /",
+        " [HIKE]",
+        "  /  \\"
+      ],
+      "dialog_start": [
+        "Jamie: The waterfall just... stopped.",
+        "Jamie: There's a cave behind the falls.",
+        "Jamie: I went in ten feet. Then I heard something.",
+        "",
+        "  [Quest accepted: The Brandywine Falls]"
+      ],
+      "dialog_complete": [
+        "Jamie: It's falling again! Listen!",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Chronolith",
+    "description": "Boss of Behind the Falls.",
+    "floor": "falls_cave",
+    "x": 8,
+    "y": 8,
+    "hp": 85,
+    "atk": 16,
+    "def": 6,
+    "xp": 130,
+    "gold": 95,
+    "art": [
+      "      *        ",
+      "     /|\\       ",
+      "   /  |  \\     ",
+      "  / TICK  \\    ",
+      " /  TOCK   \\   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "A crystal hums in the deepest chamber.",
+      "Chronolith: TIME IS A RIVER.",
+      "Chronolith: I HAVE DAMMED IT."
+    ]
+  },
+  "rewards": {
+    "gold": 600,
+    "blessing": {
+      "name": "Timeless Flow",
+      "spd_bonus": 3,
+      "mp_bonus": 15
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Jamie."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Chronolith."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Jamie."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

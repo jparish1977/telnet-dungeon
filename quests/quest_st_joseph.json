@@ -1,0 +1,164 @@
+{
+  "id": "quest_st_joseph",
+  "name": "The Last Kit",
+  "description": "The old ApexKit Electronics warehouse is building something by itself.",
+  "lore": [
+    "St. Joseph was the home of ApexKit Electronics.",
+    "Build-it-yourself radios, TVs, computers \u2014 shipped worldwide.",
+    "The warehouse closed in '92. Everything was auctioned off.",
+    "But the soldering stations are hot again.",
+    "Something is assembling a kit that was never in the catalog.",
+    "The schematics on the workbench don't match anything human."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_1_6",
+      "x": 122,
+      "y": 16,
+      "visible_if": "quest_stage >= started",
+      "label": "ApexKit Warehouse",
+      "target_floor": "apexkit_warehouse"
+    }
+  ],
+  "quest_floors": {
+    "apexkit_warehouse": {
+      "name": "ApexKit Warehouse",
+      "size": 20,
+      "theme": "cyan",
+      "difficulty": 5,
+      "description": "Rows of soldering stations glow in the dark. Half-built kits twitch on the benches.",
+      "monsters": [
+        {
+          "name": "Solder Sprite",
+          "hp": 16,
+          "atk": 9,
+          "def": 2,
+          "xp": 18,
+          "gold": 10,
+          "art": [
+            "  .o.",
+            " /~~~\\",
+            " |zap|",
+            "  '-'"
+          ]
+        },
+        {
+          "name": "Rogue Oscillator",
+          "hp": 22,
+          "atk": 8,
+          "def": 4,
+          "xp": 20,
+          "gold": 12,
+          "art": [
+            "  /\\/\\",
+            " /\\/\\/\\",
+            " \\/\\/\\/",
+            "  \\/\\/"
+          ]
+        },
+        {
+          "name": "Kit Golem",
+          "hp": 35,
+          "atk": 7,
+          "def": 7,
+          "xp": 25,
+          "gold": 15,
+          "art": [
+            "  [===]",
+            " [RADIO]",
+            " [=====]",
+            "  [===]"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "engineer": {
+      "name": "Marge",
+      "description": "Quest giver in The Last Kit.",
+      "floor": "seg_1_6",
+      "x": 124,
+      "y": 17,
+      "location": "town",
+      "symbol": "M",
+      "art": [
+        "  .===.",
+        " ( o.o )",
+        "  |   |",
+        " [APEX]",
+        " [KIT!]"
+      ],
+      "dialog_start": [
+        "Marge: I was a tech writer at ApexKit for fifteen years.",
+        "Marge: Wrote the manuals. Every kit, every revision.",
+        "Marge: Someone's in the warehouse. Soldering, wiring.",
+        "Marge: I looked through the window \u2014 the benches are lit up.",
+        "Marge: And the thing they're building... it's not in any manual I wrote.",
+        "Marge: The schematics use symbols I've never seen.",
+        "",
+        "  [Quest accepted: The Last Kit]"
+      ],
+      "dialog_complete": [
+        "Marge: It stopped? The warehouse is dark?",
+        "Marge: Kit #999. The one that was never shipped.",
+        "Marge: Maybe some things shouldn't be assembled.",
+        "Marge: Here \u2014 a prototype multimeter. Still works.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "Kit #999",
+    "description": "Boss of ApexKit Warehouse.",
+    "floor": "apexkit_warehouse",
+    "x": 10,
+    "y": 10,
+    "hp": 120,
+    "atk": 22,
+    "def": 8,
+    "xp": 180,
+    "gold": 130,
+    "art": [
+      "  .=========.  ",
+      " | .--. .--. | ",
+      " | |##| |##| | ",
+      " | '--' '--' | ",
+      " |  KIT #999 | ",
+      " |  ~~~~~~~~ | ",
+      "  '========='  ",
+      "   ||  ||  ||   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "The final kit assembles itself. Vacuum tubes glow.",
+      "It hums. It crackles. It speaks.",
+      "Kit #999: I AM THE SCHEMATIC THAT WAS NEVER PUBLISHED.",
+      "Kit #999: THE FREQUENCY BEYOND THE DIAL.",
+      "Kit #999: ASSEMBLE ME AND I WILL SHOW YOU EVERYTHING."
+    ]
+  },
+  "rewards": {
+    "gold": 900,
+    "blessing": {
+      "name": "Kit Builder's Precision",
+      "atk_bonus": 4,
+      "spd_bonus": 3
+    }
+  },
+  "stages": [
+    {
+      "id": "started",
+      "description": "Talk to Marge."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat Kit #999."
+    },
+    {
+      "id": "complete",
+      "description": "Return to Marge."
+    }
+  ]
+}

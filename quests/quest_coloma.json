@@ -1,21 +1,147 @@
 {
   "id": "quest_coloma",
-  "name": "Tales of Coloma",
-  "description": "Explore the Coloma region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Orchard Rot",
+  "description": "Apple trees in Coloma are bearing rotten, writhing fruit out of season.",
+  "lore": [
+    "Coloma is apple country. Orchards as far as you can see.",
+    "The trees are fruiting in winter. Black apples.",
+    "Some of them move. Some of them have teeth."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_1_4",
+      "x": 62,
+      "y": 69,
+      "visible_if": "quest_stage >= started",
+      "label": "The Root Network",
+      "target_floor": "root_network"
+    }
+  ],
+  "quest_floors": {
+    "root_network": {
+      "name": "The Root Network",
+      "size": 20,
+      "theme": "green",
+      "difficulty": 3,
+      "description": "Beneath the orchard, roots form a labyrinth. Smells of fermenting apples.",
+      "monsters": [
+        {
+          "name": "Rot Apple",
+          "hp": 10,
+          "atk": 5,
+          "def": 2,
+          "xp": 8,
+          "gold": 4,
+          "art": [
+            "  .@.",
+            " ( ~ )",
+            "  '-'"
+          ]
+        },
+        {
+          "name": "Root Tendril",
+          "hp": 20,
+          "atk": 7,
+          "def": 3,
+          "xp": 14,
+          "gold": 8,
+          "art": [
+            "  \\|/",
+            "  |||",
+            "  /|\\"
+          ]
+        },
+        {
+          "name": "Orchard Wight",
+          "hp": 25,
+          "atk": 8,
+          "def": 4,
+          "xp": 18,
+          "gold": 10,
+          "art": [
+            "  .--.",
+            " (o  o)",
+            " |~~~~|"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "orchardist": {
+      "name": "Big Jim",
+      "description": "Quest giver in The Orchard Rot.",
+      "floor": "seg_1_4",
+      "x": 63,
+      "y": 64,
+      "location": "town",
+      "symbol": "J",
+      "art": [
+        "  .===.",
+        " ( o o )",
+        "  |===|",
+        " [APPL]",
+        " [ES! ]"
+      ],
+      "dialog_start": [
+        "Big Jim: I grow Honeycrisp. Best in the county.",
+        "Big Jim: *holds up a pulsing black apple*",
+        "Big Jim: Something in the ground woke up.",
+        "",
+        "  [Quest accepted: The Orchard Rot]"
+      ],
+      "dialog_complete": [
+        "Big Jim: Trees are budding normal again!",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Mother Tree",
+    "description": "Boss of The Root Network.",
+    "floor": "root_network",
+    "x": 10,
+    "y": 10,
+    "hp": 90,
+    "atk": 16,
+    "def": 7,
+    "xp": 130,
+    "gold": 95,
+    "art": [
+      "    \\|||/    ",
+      "   //||\\\\   ",
+      " |  (OO)  | ",
+      "  \\ |||| /  ",
+      "    ||||    "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "A massive trunk rises from the soil. Eyes open in the bark.",
+      "Mother Tree: MY CHILDREN. YOU HURT MY CHILDREN.",
+      "Mother Tree: YOU WILL FEED MY ROOTS."
+    ]
+  },
+  "rewards": {
+    "gold": 600,
+    "blessing": {
+      "name": "Orchard's Bounty",
+      "hp_bonus": 30,
+      "def_bonus": 2
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Big Jim."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Mother Tree."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Big Jim."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

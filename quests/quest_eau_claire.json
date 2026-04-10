@@ -1,21 +1,149 @@
 {
   "id": "quest_eau_claire",
-  "name": "Tales of Eau Claire",
-  "description": "Explore the Eau Claire region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Witch of Pipestone Creek",
+  "description": "Livestock are going missing near Pipestone Creek.",
+  "lore": [
+    "Eau Claire is farm country. Orchards and cornfields.",
+    "Farmers have been losing chickens, goats, even a cow.",
+    "Grandma Hess says it's the Pipestone Witch."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_4_3",
+      "x": 67,
+      "y": 9,
+      "visible_if": "quest_stage >= started",
+      "label": "Pipestone Ravine",
+      "target_floor": "pipestone_ravine"
+    }
+  ],
+  "quest_floors": {
+    "pipestone_ravine": {
+      "name": "Pipestone Ravine",
+      "size": 20,
+      "theme": "green",
+      "difficulty": 3,
+      "description": "A deep, narrow ravine choked with thorns. Bones hang from branches.",
+      "monsters": [
+        {
+          "name": "Bone Crow",
+          "hp": 12,
+          "atk": 6,
+          "def": 2,
+          "xp": 10,
+          "gold": 5,
+          "art": [
+            "  v   v",
+            " /=^=\\",
+            "  ==="
+          ]
+        },
+        {
+          "name": "Thorn Golem",
+          "hp": 28,
+          "atk": 8,
+          "def": 5,
+          "xp": 22,
+          "gold": 12,
+          "art": [
+            "  /|\\",
+            " /|||\\",
+            " |   |"
+          ]
+        },
+        {
+          "name": "Creek Hag",
+          "hp": 20,
+          "atk": 10,
+          "def": 3,
+          "xp": 18,
+          "gold": 10,
+          "art": [
+            "  .^.",
+            " (o o)",
+            " /~~~\\"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "farmer": {
+      "name": "Grandma Hess",
+      "description": "Quest giver in The Witch of Pipestone Creek.",
+      "floor": "seg_4_3",
+      "x": 63,
+      "y": 11,
+      "location": "town",
+      "symbol": "H",
+      "art": [
+        "  .---.",
+        " (o  o)",
+        "  \\--/",
+        " [====]",
+        " /|GUN|\\"
+      ],
+      "dialog_start": [
+        "Grandma Hess: I told 'em for years.",
+        "Something lives in that ravine.",
+        "Grandma Hess: Go down to the creek. Follow it upstream.",
+        "Grandma Hess: *hands you a salt-packed shotgun shell*",
+        "",
+        "  [Quest accepted: The Witch of Pipestone Creek]"
+      ],
+      "dialog_complete": [
+        "Grandma Hess: *nods slowly*",
+        "Grandma Hess: I knew it. Fifty years I knew it.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Pipestone Witch",
+    "description": "Boss of Pipestone Ravine.",
+    "floor": "pipestone_ravine",
+    "x": 10,
+    "y": 10,
+    "hp": 90,
+    "atk": 18,
+    "def": 5,
+    "xp": 130,
+    "gold": 90,
+    "art": [
+      "    .^^^^^.    ",
+      "   / o   o \\   ",
+      "  |  ~~~~   |  ",
+      "  | /BONES\\ |  ",
+      "   \\|     |/   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "Bones rattle. The thorns part.",
+      "Witch: HUNGRY. ALWAYS HUNGRY.",
+      "Witch: YOU'LL DO NICELY."
+    ]
+  },
+  "rewards": {
+    "gold": 600,
+    "blessing": {
+      "name": "Hess Family Recipe",
+      "hp_bonus": 25,
+      "atk_bonus": 2
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Grandma Hess."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Pipestone Witch."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Grandma Hess."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

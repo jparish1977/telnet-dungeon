@@ -1,21 +1,147 @@
 {
   "id": "quest_buchanan_north",
-  "name": "Tales of Buchanan North",
-  "description": "Explore the Buchanan North region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Pumpkin King",
+  "description": "Something is growing in the pumpkin fields. Something big.",
+  "lore": [
+    "The farms north of Buchanan grow the best pumpkins.",
+    "One of them is the size of a tractor shed.",
+    "It has a face now. And it's still growing."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_3_1",
+      "x": 62,
+      "y": 68,
+      "visible_if": "quest_stage >= started",
+      "label": "The Root System",
+      "target_floor": "pumpkin_roots"
+    }
+  ],
+  "quest_floors": {
+    "pumpkin_roots": {
+      "name": "The Root System",
+      "size": 18,
+      "theme": "yellow",
+      "difficulty": 2,
+      "description": "Massive pumpkin roots form the walls. Everything smells like autumn.",
+      "monsters": [
+        {
+          "name": "Vine Creep",
+          "hp": 12,
+          "atk": 5,
+          "def": 2,
+          "xp": 10,
+          "gold": 5,
+          "art": [
+            "  \\|/",
+            "  -O-",
+            "  /|\\"
+          ]
+        },
+        {
+          "name": "Seed Spitter",
+          "hp": 16,
+          "atk": 7,
+          "def": 2,
+          "xp": 12,
+          "gold": 7,
+          "art": [
+            "  .@.",
+            " (ooo)",
+            "  '-'"
+          ]
+        },
+        {
+          "name": "Gourd Guard",
+          "hp": 22,
+          "atk": 6,
+          "def": 5,
+          "xp": 16,
+          "gold": 10,
+          "art": [
+            "  .--.",
+            " /o  o\\",
+            "  \\--/"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "farmer_pete": {
+      "name": "Pete",
+      "description": "Quest giver in The Pumpkin King.",
+      "floor": "seg_3_1",
+      "x": 64,
+      "y": 65,
+      "location": "town",
+      "symbol": "P",
+      "art": [
+        "  .---.",
+        " ( o_o )",
+        "  \\   /",
+        " [FARM]",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Pete: It's the size of my barn. And it has a FACE.",
+        "Pete: Last night I swear it looked at me.",
+        "Pete: The roots go deep. Something's under my field.",
+        "",
+        "  [Quest accepted: The Pumpkin King]"
+      ],
+      "dialog_complete": [
+        "Pete: It's shrinking! Just a regular giant pumpkin now.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Pumpkin King",
+    "description": "Boss of The Root System.",
+    "floor": "pumpkin_roots",
+    "x": 9,
+    "y": 9,
+    "hp": 75,
+    "atk": 14,
+    "def": 5,
+    "xp": 100,
+    "gold": 80,
+    "art": [
+      "    .====.     ",
+      "  /  o  o  \\   ",
+      " |  \\~~~~/ |   ",
+      "  \\  ====  /   ",
+      "   |||||||     "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "An enormous pumpkin rises. Its carved face glows.",
+      "Pumpkin King: GROOOOOOW.",
+      "Pumpkin King: YOU ARE SMALL. I WILL OUTGROW YOU."
+    ]
+  },
+  "rewards": {
+    "gold": 450,
+    "blessing": {
+      "name": "Harvest Bounty",
+      "hp_bonus": 20,
+      "def_bonus": 2
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Pete."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Pumpkin King."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Pete."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

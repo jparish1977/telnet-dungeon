@@ -23,48 +23,19 @@
   "map_mods": [
     {
       "trigger": "started",
-      "description": "A bridge appears across the water east of town, leading to a small island",
+      "description": "A bridge appears across the stream east of town, leading to the Gyre",
       "floor": -1,
+      "region": "seg_3_0",
       "tiles": [
         {
-          "x": 72,
+          "x": 70,
           "y": 63,
           "tile": 14
         },
         {
-          "x": 73,
+          "x": 71,
           "y": 63,
           "tile": 14
-        },
-        {
-          "x": 74,
-          "y": 63,
-          "tile": 14
-        },
-        {
-          "x": 75,
-          "y": 63,
-          "tile": 14
-        },
-        {
-          "x": 76,
-          "y": 62,
-          "tile": 10
-        },
-        {
-          "x": 76,
-          "y": 63,
-          "tile": 10
-        },
-        {
-          "x": 76,
-          "y": 64,
-          "tile": 10
-        },
-        {
-          "x": 77,
-          "y": 63,
-          "tile": 10
         }
       ]
     }
@@ -72,7 +43,8 @@
   "entrances": [
     {
       "floor": -1,
-      "x": 77,
+      "region": "seg_3_0",
+      "x": 72,
       "y": 63,
       "visible_if": "quest_stage >= started",
       "label": "The Gyre",
@@ -126,8 +98,9 @@
       "name": "Ginger",
       "description": "The quest giver. She stands near the overworld town, resolute.",
       "floor": -1,
-      "x": 66,
-      "y": 63,
+      "region": "seg_3_0",
+      "x": 63,
+      "y": 64,
       "location": "town",
       "symbol": "G",
       "art": [
@@ -146,8 +119,8 @@
         "Ginger: Neither came back.",
         "Ginger: I need you to go into the depths. Find Hobbles first -",
         "Ginger: he'll know where Book Eater is.",
-        "Ginger: There's an old bridge east of here, over the water.",
-        "Ginger: The entrance to the Gyre is on the island.",
+        "Ginger: There's a stream east of here. A bridge just appeared.",
+        "Ginger: The entrance to the Gyre is on the other side.",
         "Ginger: Bring them home. Please.",
         "",
         "  [Quest accepted: The Bookeater Gyre]",

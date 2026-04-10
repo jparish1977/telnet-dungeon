@@ -1,21 +1,149 @@
 {
   "id": "quest_niles",
-  "name": "Tales of Niles",
-  "description": "Explore the Niles region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Four Flags Problem",
+  "description": "The old fort is haunted by four spectral flags.",
+  "lore": [
+    "Niles: the City of Four Flags. French, British, Spanish, American.",
+    "The old fort was never fully excavated.",
+    "A construction crew broke into a chamber. They saw flags moving with no wind."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_5_0",
+      "x": 41,
+      "y": 54,
+      "visible_if": "quest_stage >= started",
+      "label": "Fort St. Joseph",
+      "target_floor": "niles_fort"
+    }
+  ],
+  "quest_floors": {
+    "niles_fort": {
+      "name": "Fort St. Joseph",
+      "size": 20,
+      "theme": "cyan",
+      "difficulty": 4,
+      "description": "Stone walls from four different eras.",
+      "monsters": [
+        {
+          "name": "French Phantom",
+          "hp": 20,
+          "atk": 8,
+          "def": 3,
+          "xp": 18,
+          "gold": 10,
+          "art": [
+            "  ~ooo~",
+            " ~ | | ~",
+            "  \\|_|/"
+          ]
+        },
+        {
+          "name": "British Shade",
+          "hp": 22,
+          "atk": 9,
+          "def": 4,
+          "xp": 20,
+          "gold": 12,
+          "art": [
+            "  .-==-.",
+            " |  ++ |",
+            "  '===' "
+          ]
+        },
+        {
+          "name": "Spectral Soldier",
+          "hp": 28,
+          "atk": 10,
+          "def": 5,
+          "xp": 25,
+          "gold": 15,
+          "art": [
+            "  .--.",
+            " (o  o)",
+            "  |==|",
+            " /|  |\\"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "foreman": {
+      "name": "Diane",
+      "description": "Quest giver in The Four Flags Problem.",
+      "floor": "seg_5_0",
+      "x": 38,
+      "y": 50,
+      "location": "town",
+      "symbol": "D",
+      "art": [
+        "  .---.",
+        " ( -.- )",
+        "  \\   /",
+        " [HARD]",
+        " [HAT!]"
+      ],
+      "dialog_start": [
+        "Diane: I don't believe in ghosts.",
+        "Diane: But my crew does.",
+        "Diane: Four flags hanging in mid-air. No poles, no wind.",
+        "Diane: Go down there and deal with it.",
+        "",
+        "  [Quest accepted: The Four Flags Problem]"
+      ],
+      "dialog_complete": [
+        "Diane: The flags are gone? My crew can get back to work?",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Flag Bearer",
+    "description": "Boss of Fort St. Joseph.",
+    "floor": "niles_fort",
+    "x": 10,
+    "y": 10,
+    "hp": 100,
+    "atk": 20,
+    "def": 7,
+    "xp": 160,
+    "gold": 120,
+    "art": [
+      " |F| |B| |S| |A|",
+      "  .---+---+---.  ",
+      " (  O       O  ) ",
+      "  |   ====   |   ",
+      "    ~~~~~~~~     "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "Four flags snap to attention.",
+      "Flag Bearer: I HAVE HELD THESE FLAGS FOR CENTURIES.",
+      "Flag Bearer: NONE SHALL PASS."
+    ]
+  },
+  "rewards": {
+    "gold": 800,
+    "blessing": {
+      "name": "Four Flags Valor",
+      "atk_bonus": 3,
+      "def_bonus": 3
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Diane."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Flag Bearer."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Diane."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }
