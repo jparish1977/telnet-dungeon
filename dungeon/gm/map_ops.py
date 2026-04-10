@@ -18,11 +18,11 @@ from dungeon.persistence import save_custom_floor
 # ── Tile legends ──────────────────────────────────────────────────
 
 DUNGEON_TILE_CHARS = {
-    0: '.', 1: '#', 2: 'D', 3: '>', 4: '<', 5: 'C', 6: 'F',
+    0: '.', 1: '#', 2: 'D', 3: '>', 4: '<', 5: 'C', 6: 'F', 7: '#',
 }
 DUNGEON_TILE_NAMES = {
     0: 'floor', 1: 'wall', 2: 'door', 3: 'stairs_down', 4: 'stairs_up',
-    5: 'chest', 6: 'fountain',
+    5: 'chest', 6: 'fountain', 7: 'secret_wall',
 }
 
 OW_TILE_CHARS = {

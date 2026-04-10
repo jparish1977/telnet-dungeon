@@ -891,6 +891,7 @@ def _tile_render(t, is_ow_floor):
             4: f"{CSI}92;40m<{RESET}",
             5: f"{CSI}93;43m${RESET}",
             6: f"{CSI}96;44m~{RESET}",
+            7: f"{CSI}35;100m#{RESET}",  # secret wall — magenta on gray
         }
         return mapping.get(t, f"{CSI}90m?{RESET}")
 
@@ -918,7 +919,7 @@ async def gm_scene_editor(session, world, floor=0):
     if is_ow_floor:
         brushes = [OW_GRASS, OW_FOREST, OW_MOUNTAIN, OW_WATER, OW_ROAD, OW_TOWN, OW_DUNGEON]
     else:
-        brushes = [0, 1, 2, 3, 4, 5, 6]
+        brushes = [0, 1, 2, 3, 4, 5, 6, 7]
 
     brush_idx = 0
     painting = False
@@ -981,7 +982,7 @@ async def gm_scene_editor(session, world, floor=0):
 
             # Help row
             await session.move_to(th, 1)
-            await session.send(f" {color('WASD', YELLOW)}move {color('P', YELLOW)}aint {color('1-7', YELLOW)}brush {color('F', YELLOW)}ill {color('G', YELLOW)}rid {color('<>', CYAN)}floor {color('X', YELLOW)}save {color('Q', YELLOW)}uit")
+            await session.send(f" {color('WASD', YELLOW)}move {color('P', YELLOW)}aint {color('1-8', YELLOW)}brush {color('F', YELLOW)}ill {color('G', YELLOW)}rid {color('<>', CYAN)}floor {color('X', YELLOW)}save {color('Q', YELLOW)}uit")
 
             needs_full_redraw = False
         else:
@@ -1019,10 +1020,10 @@ async def gm_scene_editor(session, world, floor=0):
                     OW_DUNGEON: "Dung.E",
                 }
             else:
-                brushes = [0, 1, 2, 3, 4, 5, 6]
+                brushes = [0, 1, 2, 3, 4, 5, 6, 7]
                 tile_names = {
                     0: "Floor", 1: "Wall", 2: "Door", 3: "StairsD",
-                    4: "StairsU", 5: "Treas", 6: "Fount",
+                    4: "StairsU", 5: "Treas", 6: "Fount", 7: "Secret",
                 }
             brush_idx = 0
             needs_full_redraw = True
@@ -1044,10 +1045,10 @@ async def gm_scene_editor(session, world, floor=0):
                     OW_DUNGEON: "Dung.E",
                 }
             else:
-                brushes = [0, 1, 2, 3, 4, 5, 6]
+                brushes = [0, 1, 2, 3, 4, 5, 6, 7]
                 tile_names = {
                     0: "Floor", 1: "Wall", 2: "Door", 3: "StairsD",
-                    4: "StairsU", 5: "Treas", 6: "Fount",
+                    4: "StairsU", 5: "Treas", 6: "Fount", 7: "Secret",
                 }
             brush_idx = 0
             needs_full_redraw = True
@@ -1098,7 +1099,7 @@ async def gm_scene_editor(session, world, floor=0):
                 dungeon[cy][cx] = brush
                 needs_full_redraw = True
 
-        elif cmd in '1234567':
+        elif cmd in '12345678':
             brush_idx = int(cmd) - 1
             if brush_idx >= len(brushes):
                 brush_idx = len(brushes) - 1

@@ -40,6 +40,16 @@ def color(text, c):
     return f"{c}{text}{RESET}"
 
 
+# ── Dungeon Tiles ─────────────────────────────────────────────────
+TILE_FLOOR = 0
+TILE_WALL = 1
+TILE_DOOR = 2
+TILE_STAIRS_DOWN = 3
+TILE_STAIRS_UP = 4
+TILE_CHEST = 5
+TILE_FOUNTAIN = 6
+TILE_SECRET_WALL = 7  # renders as wall, but walkable — hidden passage
+
 # ── Overworld Tiles ───────────────────────────────────────────────
 # 10=grass, 11=forest, 12=mountain, 13=water, 14=road, 15=town, 16=dungeon entrance
 OW_GRASS = 10

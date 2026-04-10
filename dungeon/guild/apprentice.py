@@ -12,6 +12,7 @@ In game mode (future), they walk to the site and place tiles one at a
 time, so players can spectate them building.
 """
 
+from dungeon.config import TILE_WALL, TILE_SECRET_WALL, TILE_STAIRS_DOWN, TILE_STAIRS_UP
 from dungeon.floor import get_floor, set_floor, is_overworld
 from dungeon.gm.map_ops import apply_ops, save_floor, set_tile, carve_corridor
 from dungeon.guild.jobs import (
@@ -109,18 +110,17 @@ class Apprentice:
                             return [], True
 
             # Placing a feature (chest, fountain) in a wall?
-            if tile in (5, 6) and grid[y][x] == 1:
-                # Find nearest open tile and dig a tunnel
+            if tile in (5, 6) and grid[y][x] == TILE_WALL:
+                # Find nearest open tile and place secret walls along the path
                 nearest = _find_nearest_open(grid, x, y)
                 if nearest:
                     nx, ny = nearest
                     if verbose:
-                        print(f"    [{self.name}] Wall at ({x},{y}) — digging tunnel from ({nx},{ny})")
+                        print(f"    [{self.name}] Wall at ({x},{y}) — placing secret passage from ({nx},{ny})")
                     self.ops_fixed += 1
-                    return [
-                        {"action": "carve_corridor", "x1": nx, "y1": ny, "x2": x, "y2": y},
-                        op,
-                    ], True
+                    # Build path of secret walls from nearest open to target
+                    secret_ops = _build_secret_path(nx, ny, x, y)
+                    return secret_ops + [op], True
                 else:
                     if verbose:
                         print(f"    [{self.name}] Can't reach ({x},{y}) — escalating")
@@ -164,18 +164,16 @@ class Apprentice:
                 if check:
                     cx, cy = check
                     if 0 < cx < size - 1 and 0 < cy < size - 1:
-                        if grid[cy][cx] == 1:
-                            # Door opens into wall — dig a corridor to nearest open
+                        if grid[cy][cx] == TILE_WALL:
+                            # Door opens into wall — place secret walls to nearest open
                             nearest = _find_nearest_open(grid, cx, cy)
                             if nearest:
                                 nx, ny = nearest
                                 if verbose:
-                                    print(f"    [{self.name}] Room door opens into wall — digging access tunnel from ({nx},{ny})")
+                                    print(f"    [{self.name}] Room door opens into wall — placing secret passage from ({nx},{ny})")
                                 self.ops_fixed += 1
-                                return [
-                                    op,
-                                    {"action": "carve_corridor", "x1": nx, "y1": ny, "x2": cx, "y2": cy},
-                                ], True
+                                secret_ops = _build_secret_path(nx, ny, cx, cy)
+                                return [op] + secret_ops, True
 
             return [op], True
 
@@ -246,13 +244,23 @@ class Apprentice:
                     # Check all features are reachable
                     for y in range(len(grid)):
                         for x in range(len(grid[0])):
-                            if grid[y][x] in (3, 5, 6) and (x, y) not in reachable:
+                            if grid[y][x] in (TILE_STAIRS_DOWN, 5, 6) and (x, y) not in reachable:
                                 if verbose:
-                                    tile_name = {3: 'stairs_down', 5: 'chest', 6: 'fountain'}[grid[y][x]]
-                                    print(f"  [FIX] Unreachable {tile_name} at ({x},{y}) — digging access")
+                                    tile_name = {TILE_STAIRS_DOWN: 'stairs_down', 5: 'chest', 6: 'fountain'}[grid[y][x]]
+                                    print(f"  [FIX] Unreachable {tile_name} at ({x},{y}) — placing secret passage")
                                 nearest = _find_nearest_open_reachable(grid, x, y, reachable)
                                 if nearest:
-                                    carve_corridor(grid, nearest[0], nearest[1], x, y)
+                                    # Place secret walls along path instead of carving
+                                    sx, sy = nearest
+                                    cx, cy = sx, sy
+                                    while cx != x:
+                                        cx += 1 if x > cx else -1
+                                        if grid[cy][cx] == TILE_WALL:
+                                            grid[cy][cx] = TILE_SECRET_WALL
+                                    while cy != y:
+                                        cy += 1 if y > cy else -1
+                                        if grid[cy][cx] == TILE_WALL:
+                                            grid[cy][cx] = TILE_SECRET_WALL
                                     set_floor(floor_num, grid)
                                     self.ops_fixed += 1
 
@@ -296,6 +304,23 @@ class Apprentice:
             'ops_escalated': self.ops_escalated,
             'current_job': self.current_job['id'] if self.current_job else None,
         }
+
+
+def _build_secret_path(x1, y1, x2, y2):
+    """Build a list of set_tile ops placing secret walls along an L-shaped path.
+
+    Only places secret walls on tiles that are currently regular walls.
+    The path goes horizontal first, then vertical.
+    """
+    ops = []
+    x, y = x1, y1
+    while x != x2:
+        x += 1 if x2 > x else -1
+        ops.append({"action": "set_tile", "x": x, "y": y, "tile": TILE_SECRET_WALL})
+    while y != y2:
+        y += 1 if y2 > y else -1
+        ops.append({"action": "set_tile", "x": x, "y": y, "tile": TILE_SECRET_WALL})
+    return ops
 
 
 def _find_nearest_open_reachable(grid, x, y, reachable):

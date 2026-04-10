@@ -5,6 +5,7 @@ from dungeon.config import (
     color, COLOR_NAMES, BG_COLOR_NAMES,
     OW_GRASS, OW_FOREST, OW_MOUNTAIN, OW_WATER, OW_ROAD, OW_TOWN, OW_DUNGEON,
     OVERWORLD_FLOOR,
+    TILE_WALL, TILE_SECRET_WALL,
 )
 from dungeon.items import DIR_DX, DIR_DY
 from dungeon.monsters import get_floor_monsters
@@ -50,6 +51,8 @@ def render_3d_view(dungeon, px, py, facing, vw=40, vh=15, floor_num=0, visible_m
                     return 0  # open
                 else:
                     return 0
+            if raw == TILE_SECRET_WALL:
+                return TILE_WALL  # secret wall — render as normal wall
             return raw
         return 1  # out of bounds = wall
 

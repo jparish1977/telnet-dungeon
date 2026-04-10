@@ -27,7 +27,7 @@ def _flood_reachable(grid, start_x, start_y, passable=None):
     """BFS from a point, return set of reachable (x,y) tuples."""
     size = len(grid)
     if passable is None:
-        passable = {0, 2, 3, 4, 5, 6}  # everything except walls
+        passable = {0, 2, 3, 4, 5, 6, 7}  # everything except walls (7=secret wall, passable)
     visited = set()
     stack = [(start_x, start_y)]
     while stack:
