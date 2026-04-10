@@ -42,7 +42,9 @@ def compile_behavior(rules: list[dict]) -> str:
 
 def evaluate_behavior(mob: dict, players: list[dict],
                       floor_num: int = 0, flags: dict = None,
-                      ally_count: int = 0) -> list[str]:
+                      ally_count: int = 0,
+                      floor_grid: list = None,
+                      pending_jobs: int = 0) -> list[str]:
     """Evaluate a mob's behavior rules and return actions to perform.
 
     Args:
@@ -51,6 +53,8 @@ def evaluate_behavior(mob: dict, players: list[dict],
         floor_num: current floor number
         flags: quest/world flags dict
         ally_count: number of alive allies on this floor
+        floor_grid: 2D tile array (enables construction conditions)
+        pending_jobs: number of pending guild jobs (for builder NPCs)
 
     Returns:
         list of action strings, e.g. ["attack", "poison 30"]
@@ -68,6 +72,8 @@ def evaluate_behavior(mob: dict, players: list[dict],
         'floor_num': floor_num,
         'flags': flags or {},
         'ally_count': ally_count,
+        'floor_grid': floor_grid,
+        'pending_jobs': pending_jobs,
     }
 
     sandbox = _backend.create_sandbox(game_state)
