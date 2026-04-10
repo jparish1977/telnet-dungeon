@@ -1,21 +1,146 @@
 {
   "id": "quest_berrien_springs",
-  "name": "Tales of Berrien Springs",
-  "description": "Explore the Berrien Springs region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The River's Memory",
+  "description": "The St. Joseph River is flooding in one spot, and the water remembers things.",
+  "lore": [
+    "Berrien Springs is a quiet college town on the river.",
+    "Something upstream is feeding the river memories.",
+    "People see faces in the water. Hear voices at night."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_3_3",
+      "x": 115,
+      "y": 121,
+      "visible_if": "quest_stage >= started",
+      "label": "River Caves",
+      "target_floor": "river_caves"
+    }
+  ],
+  "quest_floors": {
+    "river_caves": {
+      "name": "River Caves",
+      "size": 22,
+      "theme": "blue",
+      "difficulty": 4,
+      "description": "Wet limestone caves. The walls echo with centuries of whispers.",
+      "monsters": [
+        {
+          "name": "Memory Echo",
+          "hp": 18,
+          "atk": 7,
+          "def": 3,
+          "xp": 16,
+          "gold": 9,
+          "art": [
+            "  ~~~",
+            " (. .)",
+            "  ~~~"
+          ]
+        },
+        {
+          "name": "River Shade",
+          "hp": 24,
+          "atk": 9,
+          "def": 4,
+          "xp": 22,
+          "gold": 14,
+          "art": [
+            "  ~.~.~",
+            " / o o \\",
+            "  ~~~~~"
+          ]
+        },
+        {
+          "name": "Calcified Crayfish",
+          "hp": 30,
+          "atk": 6,
+          "def": 8,
+          "xp": 20,
+          "gold": 10,
+          "art": [
+            "  V   V",
+            " /=====\\",
+            "  \\===/"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "professor": {
+      "name": "Professor Mills",
+      "description": "Quest giver in The River's Memory.",
+      "floor": "seg_3_3",
+      "x": 113,
+      "y": 116,
+      "location": "town",
+      "symbol": "P",
+      "art": [
+        "  .---.",
+        " ( o o )",
+        "  | = |",
+        " [LABS]",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Prof. Mills: The water table is doing something impossible.",
+        "Prof. Mills: There's a sinkhole feeding into a cave system.",
+        "Prof. Mills: Can you investigate?",
+        "",
+        "  [Quest accepted: The River's Memory]"
+      ],
+      "dialog_complete": [
+        "Prof. Mills: The resonance stopped! The river's calming.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Drowned Choir",
+    "description": "Boss of River Caves.",
+    "floor": "river_caves",
+    "x": 11,
+    "y": 11,
+    "hp": 110,
+    "atk": 18,
+    "def": 6,
+    "xp": 150,
+    "gold": 110,
+    "art": [
+      " ~ o  o  o ~",
+      " ~  )  )  ) ~",
+      "  ~~~~~~~~  ",
+      " ~MEMORIES~ "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "Faces surface in the pool.",
+      "Choir: WE REMEMBER THE FLOODS.",
+      "Choir: JOIN US. ADD YOUR VOICE."
+    ]
+  },
+  "rewards": {
+    "gold": 700,
+    "blessing": {
+      "name": "River's Clarity",
+      "hp_bonus": 30,
+      "mp_bonus": 15
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Professor Mills."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Drowned Choir."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Professor Mills."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

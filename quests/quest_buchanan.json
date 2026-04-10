@@ -1,21 +1,162 @@
 {
   "id": "quest_buchanan",
-  "name": "Tales of Buchanan",
-  "description": "Explore the Buchanan region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The EternalVoice Factory",
+  "description": "The old EternaVox speaker factory is broadcasting again. On frequencies that shouldn't exist.",
+  "lore": [
+    "Buchanan was a factory town. EternaVox Acoustics made speakers here",
+    "from 1927 to 2006. Best sound equipment in the world.",
+    "The factory's been empty for twenty years.",
+    "But last week, the test lab started transmitting.",
+    "Not radio. Not audio. Something else entirely.",
+    "The signal makes your fillings hum."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_3_0",
+      "x": 64,
+      "y": 69,
+      "visible_if": "quest_stage >= started",
+      "label": "EternaVox Sub-Basement",
+      "target_floor": "eternavox_basement"
+    }
+  ],
+  "quest_floors": {
+    "eternavox_basement": {
+      "name": "EternaVox Sub-Basement",
+      "size": 24,
+      "theme": "gray",
+      "difficulty": 3,
+      "description": "Soundproofed corridors. Dead speakers line the walls. Something is humming.",
+      "monsters": [
+        {
+          "name": "Feedback Loop",
+          "hp": 14,
+          "atk": 5,
+          "def": 2,
+          "xp": 12,
+          "gold": 6,
+          "art": [
+            "  ))))",
+            " ((((",
+            "  ))))",
+            " (((("
+          ]
+        },
+        {
+          "name": "Blown Woofer",
+          "hp": 25,
+          "atk": 8,
+          "def": 6,
+          "xp": 20,
+          "gold": 12,
+          "art": [
+            "  .===.",
+            " / o o \\",
+            " |=====|",
+            "  \\===/"
+          ]
+        },
+        {
+          "name": "Phantom Signal",
+          "hp": 18,
+          "atk": 6,
+          "def": 3,
+          "xp": 15,
+          "gold": 8,
+          "art": [
+            "  ~|~|~",
+            " ~|~|~|~",
+            "  ~|~|~"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "granny": {
+      "name": "Granny",
+      "description": "Quest giver in The EternalVoice Factory.",
+      "floor": "seg_3_0",
+      "x": 67,
+      "y": 70,
+      "location": "town",
+      "symbol": "G",
+      "art": [
+        "  .---.",
+        " ( o.o )",
+        "  \\---/",
+        " [GRAN]",
+        " [NY! ]"
+      ],
+      "dialog_start": [
+        "Granny: I worked the EternaVox line for forty years.",
+        "Granny: Best speakers ever made. Right here in Buchanan.",
+        "Granny: The factory's been dark since '06.",
+        "Granny: But the anechoic chamber is active again.",
+        "Granny: Something is broadcasting from the sub-basement.",
+        "Granny: Frequencies that shouldn't be possible.",
+        "",
+        "  [Quest accepted: The EternalVoice Factory]"
+      ],
+      "dialog_complete": [
+        "Granny: The signal stopped. Good.",
+        "Granny: Some frequencies aren't meant to be heard.",
+        "Granny: Here \u2014 my old prototype mic. Still works perfect.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Resonance",
+    "description": "Boss of EternaVox Sub-Basement.",
+    "floor": "eternavox_basement",
+    "x": 12,
+    "y": 12,
+    "hp": 80,
+    "atk": 16,
+    "def": 6,
+    "xp": 120,
+    "gold": 100,
+    "art": [
+      "  .========.  ",
+      " | )))(((  | ",
+      " | (SPEAK) | ",
+      " | )))(((  | ",
+      " |  CONE   | ",
+      "  '========'  ",
+      "   |||||||    ",
+      "  ~~~~~~~~~   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "Every speaker in the factory fires at once.",
+      "The sound coalesces into a shape. A voice.",
+      "Resonance: I AM THE PERFECT FREQUENCY.",
+      "Resonance: I WAS BORN IN THE ANECHOIC CHAMBER.",
+      "Resonance: AND I WILL BE HEARD."
+    ]
+  },
+  "rewards": {
+    "gold": 600,
+    "blessing": {
+      "name": "Perfect Pitch",
+      "atk_bonus": 3,
+      "def_bonus": 2
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Granny."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Resonance."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Granny."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

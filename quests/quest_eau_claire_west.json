@@ -1,21 +1,147 @@
 {
   "id": "quest_eau_claire_west",
-  "name": "Tales of Eau Claire",
-  "description": "Explore the Eau Claire West region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Covered Bridge",
+  "description": "The old covered bridge keeps rebuilding itself overnight.",
+  "lore": [
+    "There used to be a covered bridge on the road to Eau Claire.",
+    "It burned in 1952. But it grew back. Wood and all.",
+    "The county tore it down. It grew back by morning."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_3_4",
+      "x": 69,
+      "y": 65,
+      "visible_if": "quest_stage >= started",
+      "label": "Under the Bridge",
+      "target_floor": "bridge_cave"
+    }
+  ],
+  "quest_floors": {
+    "bridge_cave": {
+      "name": "Under the Bridge",
+      "size": 16,
+      "theme": "green",
+      "difficulty": 3,
+      "description": "A cave beneath the creek. Wooden roots grow from the ceiling.",
+      "monsters": [
+        {
+          "name": "Wood Sprite",
+          "hp": 14,
+          "atk": 6,
+          "def": 3,
+          "xp": 12,
+          "gold": 6,
+          "art": [
+            "  .|.",
+            " /.|.\\",
+            "  '-'"
+          ]
+        },
+        {
+          "name": "Nail Swarm",
+          "hp": 10,
+          "atk": 9,
+          "def": 1,
+          "xp": 10,
+          "gold": 5,
+          "art": [
+            "  ///",
+            " ////",
+            "  ///"
+          ]
+        },
+        {
+          "name": "Plank Golem",
+          "hp": 26,
+          "atk": 7,
+          "def": 6,
+          "xp": 18,
+          "gold": 10,
+          "art": [
+            "  [==]",
+            " [    ]",
+            "  [==]"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "road_crew": {
+      "name": "Hank",
+      "description": "Quest giver in The Covered Bridge.",
+      "floor": "seg_3_4",
+      "x": 63,
+      "y": 63,
+      "location": "town",
+      "symbol": "H",
+      "art": [
+        "  .---.",
+        " ( -.- )",
+        "  |   |",
+        " [ROAD]",
+        " [CREW]"
+      ],
+      "dialog_start": [
+        "Hank: We tore it down Monday. It was back Tuesday.",
+        "Hank: There's something under the bridge. A cave.",
+        "Hank: I'm not going under a bridge that rebuilds itself.",
+        "",
+        "  [Quest accepted: The Covered Bridge]"
+      ],
+      "dialog_complete": [
+        "Hank: Bridge is still there. But it stopped growing.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Bridge Keeper",
+    "description": "Boss of Under the Bridge.",
+    "floor": "bridge_cave",
+    "x": 8,
+    "y": 8,
+    "hp": 75,
+    "atk": 14,
+    "def": 5,
+    "xp": 100,
+    "gold": 80,
+    "art": [
+      "    .---.      ",
+      "   / o o \\     ",
+      "  | BUILT |    ",
+      "  | 1887  |    ",
+      "  ==BRIDGE==   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "A figure steps from the wall.",
+      "Bridge Keeper: I BUILT THIS BRIDGE WITH MY OWN HANDS.",
+      "Bridge Keeper: GOOD WORK ENDURES."
+    ]
+  },
+  "rewards": {
+    "gold": 500,
+    "blessing": {
+      "name": "Builder's Resolve",
+      "def_bonus": 3,
+      "hp_bonus": 15
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Hank."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Bridge Keeper."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Hank."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

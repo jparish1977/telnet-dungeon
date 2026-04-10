@@ -1,21 +1,147 @@
 {
   "id": "quest_coloma_south",
-  "name": "Tales of Coloma South",
-  "description": "Explore the Coloma South region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Honey War",
+  "description": "Two rival apiaries are at war. The bees have taken sides.",
+  "lore": [
+    "The Patterson and Kowalski families have kept bees for generations.",
+    "Now the bees themselves have joined the feud.",
+    "Something in the hives has made them organized."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_2_3",
+      "x": 64,
+      "y": 61,
+      "visible_if": "quest_stage >= started",
+      "label": "The Queen Hive",
+      "target_floor": "queen_hive"
+    }
+  ],
+  "quest_floors": {
+    "queen_hive": {
+      "name": "The Queen Hive",
+      "size": 18,
+      "theme": "yellow",
+      "difficulty": 3,
+      "description": "Hexagonal chambers of wax and honey. The buzzing is deafening.",
+      "monsters": [
+        {
+          "name": "Soldier Bee",
+          "hp": 14,
+          "atk": 6,
+          "def": 3,
+          "xp": 12,
+          "gold": 6,
+          "art": [
+            "  /\\",
+            " /oo\\",
+            "  \\/"
+          ]
+        },
+        {
+          "name": "Honey Slime",
+          "hp": 20,
+          "atk": 5,
+          "def": 4,
+          "xp": 14,
+          "gold": 10,
+          "art": [
+            "  ~~~",
+            " (~~~)",
+            "  ~~~"
+          ]
+        },
+        {
+          "name": "Wax Sentinel",
+          "hp": 26,
+          "atk": 8,
+          "def": 5,
+          "xp": 18,
+          "gold": 12,
+          "art": [
+            "  [HEX]",
+            " [     ]",
+            "  [HEX]"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "beekeeper": {
+      "name": "Agnes",
+      "description": "Quest giver in The Honey War.",
+      "floor": "seg_2_3",
+      "x": 64,
+      "y": 64,
+      "location": "town",
+      "symbol": "A",
+      "art": [
+        "  .===.",
+        " (o  o )",
+        "  |BEE|",
+        " [KEEP]",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Agnes: Both families are blaming each other.",
+        "Agnes: Something's controlling the bees. From underground.",
+        "Agnes: There's an old root cellar between both properties.",
+        "",
+        "  [Quest accepted: The Honey War]"
+      ],
+      "dialog_complete": [
+        "Agnes: The swarms calmed down overnight!",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Mega Queen",
+    "description": "Boss of The Queen Hive.",
+    "floor": "queen_hive",
+    "x": 9,
+    "y": 9,
+    "hp": 80,
+    "atk": 15,
+    "def": 5,
+    "xp": 110,
+    "gold": 85,
+    "art": [
+      "    /====\\     ",
+      "   / O  O \\    ",
+      "  | |BUZZ| |   ",
+      "   \\|    |/    ",
+      "  ~~~~~~~~     "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "A massive queen bee descends from the ceiling.",
+      "Mega Queen: MY HIVES. MY TERRITORY.",
+      "Mega Queen: YOU ARE NOT A BEE."
+    ]
+  },
+  "rewards": {
+    "gold": 550,
+    "blessing": {
+      "name": "Queen's Honey",
+      "hp_bonus": 25,
+      "spd_bonus": 2
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Agnes."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Mega Queen."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Agnes."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

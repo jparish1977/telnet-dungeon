@@ -13,7 +13,7 @@ from dungeon.items import WEAPONS, ARMOR, SPELLS, DIR_NAMES, DIR_DX, DIR_DY
 from dungeon.persistence import save_character
 from dungeon.floor import (
     get_floor, get_floor_spawn, get_overworld_spawn,
-    is_tile_blocked, is_overworld, MAX_FLOOR,
+    is_tile_blocked, is_overworld, MAX_FLOOR, set_overworld,
 )
 from dungeon.monsters import (
     get_floor_monsters, get_monster_at, kill_monster, move_floor_monsters,
@@ -22,12 +22,12 @@ from dungeon.character import validate_position
 from dungeon.renderer_3d import render_3d_view
 from dungeon.renderer_minimap import render_minimap
 from dungeon.combat import _bar
-from dungeon.region import try_zone_transition, get_segment_display_name, get_current_segment
+from dungeon.region import try_zone_transition, get_segment_display_name, get_current_segment, load_segment
 from dungeon.quests import (
     get_visible_entrances, get_all_visible_npcs,
     run_npc_dialog, get_quest_stage,
     set_quest_stage, apply_quest_rewards, has_quest_flag,
-    apply_all_active_mods,
+    apply_all_active_mods, get_quest_floor_num, QUEST_FLOOR_BASE,
 )
 
 
@@ -424,8 +424,6 @@ async def run_main_loop(session, world):
     """Main exploration loop."""
     # Load correct region segment on login
     if session.char.get('floor') == OVERWORLD_FLOOR:
-        from dungeon.region import load_segment, get_current_segment, get_segment_display_name
-        from dungeon.floor import set_overworld
         col, row = get_current_segment(session.char)
         seg = load_segment(col, row)
         if seg:
@@ -582,6 +580,20 @@ async def run_main_loop(session, world):
                         del target._pvp_response
             continue
 
+        elif cmd == 'l':
+            # Look — text description of surroundings
+            from dungeon.gm.map_ops import look_text
+            text = look_text(floor, px, py, facing)
+            await session.send(CLEAR)
+            await session.send_line(color("=== LOOK ===", MAGENTA))
+            for line in text.split('\n'):
+                await session.send_line(f"  {line}")
+            await session.send_line()
+            await session.get_char(color("  Press any key...", DIM))
+            session.invalidate_frame()
+            await session.send(CLEAR)
+            continue
+
         elif cmd == 'c':
             await session.character_screen()
             continue
@@ -630,13 +642,11 @@ async def run_main_loop(session, world):
                 session.char['quest_return_floor'] = floor
                 session.char['quest_return_x'] = px
                 session.char['quest_return_y'] = py
-                # Enter quest dungeon (use quest floor ID as a string-keyed floor)
-                # For now, map quest floors to high floor numbers to avoid collision
-                quest_floor_map = {
-                    'gyre_1': 90000,
-                    'gyre_2': 90001,
-                }
-                qfloor = quest_floor_map.get(target_floor, 90000)
+                # Enter quest dungeon — dynamic floor number from quest data
+                qfloor = get_quest_floor_num(target_floor)
+                if qfloor is None:
+                    session.log(color("The entrance leads nowhere...", RED))
+                    continue
                 session.char['floor'] = qfloor
                 sx, sy = get_floor_spawn(qfloor)
                 session.char['x'] = sx
@@ -673,7 +683,7 @@ async def run_main_loop(session, world):
 
         elif cmd == '<' and current_tile == 4:
             # Check if we're in a quest dungeon
-            if floor >= 90000:
+            if floor >= QUEST_FLOOR_BASE:
                 ret_floor = session.char.get('quest_return_floor', OVERWORLD_FLOOR)
                 ret_x = session.char.get('quest_return_x', 1)
                 ret_y = session.char.get('quest_return_y', 1)
@@ -744,7 +754,6 @@ async def run_main_loop(session, world):
                 transitioned, new_grid = try_zone_transition(session.char, trans_x, trans_y, map_size)
                 if transitioned and new_grid:
                     # Swap the overworld to the new segment
-                    from dungeon.floor import set_overworld
                     set_overworld(new_grid)
                     col, row = get_current_segment(session.char)
                     zone_name = get_segment_display_name(col, row)

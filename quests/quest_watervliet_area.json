@@ -1,21 +1,147 @@
 {
   "id": "quest_watervliet_area",
-  "name": "Tales of Watervliet Area",
-  "description": "Explore the Watervliet Area region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Paper Mill Curse",
+  "description": "The old paper mill is producing prophetic paper.",
+  "lore": [
+    "Watervliet had a paper mill on the Paw Paw River.",
+    "Paper started coming out of the old machinery.",
+    "Words appear on it. Warnings. Things that haven't happened yet."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_2_2",
+      "x": 58,
+      "y": 61,
+      "visible_if": "quest_stage >= started",
+      "label": "Paper Mill Basement",
+      "target_floor": "paper_mill"
+    }
+  ],
+  "quest_floors": {
+    "paper_mill": {
+      "name": "Paper Mill Basement",
+      "size": 20,
+      "theme": "white",
+      "difficulty": 4,
+      "description": "Machinery runs itself. Paper scrolls fly through the air.",
+      "monsters": [
+        {
+          "name": "Paper Wasp",
+          "hp": 12,
+          "atk": 7,
+          "def": 1,
+          "xp": 10,
+          "gold": 5,
+          "art": [
+            "  /\\",
+            " /  \\",
+            "  \\/"
+          ]
+        },
+        {
+          "name": "Ink Blob",
+          "hp": 20,
+          "atk": 6,
+          "def": 4,
+          "xp": 14,
+          "gold": 8,
+          "art": [
+            "  ooo",
+            " ooooo",
+            "  ooo"
+          ]
+        },
+        {
+          "name": "Scroll Golem",
+          "hp": 28,
+          "atk": 8,
+          "def": 5,
+          "xp": 20,
+          "gold": 12,
+          "art": [
+            "  [===]",
+            " [WORDS]",
+            "  [===]"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "reporter": {
+      "name": "Lisa",
+      "description": "Quest giver in The Paper Mill Curse.",
+      "floor": "seg_2_2",
+      "x": 62,
+      "y": 62,
+      "location": "town",
+      "symbol": "L",
+      "art": [
+        "  .---.",
+        " ( o.o )",
+        "  \\   /",
+        " [NEWS]",
+        " [PAD!]"
+      ],
+      "dialog_start": [
+        "Lisa: *shows paper* 'Bridge collapse, March 15.'",
+        "Lisa: That was yesterday!",
+        "Lisa: Something in the mill basement is writing the future.",
+        "",
+        "  [Quest accepted: The Paper Mill Curse]"
+      ],
+      "dialog_complete": [
+        "Lisa: The last sheet? Blank. The future's ours to write.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Oracle Press",
+    "description": "Boss of Paper Mill Basement.",
+    "floor": "paper_mill",
+    "x": 10,
+    "y": 10,
+    "hp": 100,
+    "atk": 18,
+    "def": 6,
+    "xp": 145,
+    "gold": 105,
+    "art": [
+      "  [=========]  ",
+      "  |  PRESS  |  ",
+      "  | | THE | |  ",
+      "  | |FUTUR| |  ",
+      "  [=========]  "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "Words form in the air, written in ink:",
+      "Oracle: I SEE ALL ENDINGS.",
+      "Oracle: LET ME SHOW YOU HOW THIS STORY ENDS."
+    ]
+  },
+  "rewards": {
+    "gold": 700,
+    "blessing": {
+      "name": "Prophet's Insight",
+      "mp_bonus": 25,
+      "spd_bonus": 2
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Lisa."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Oracle Press."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Lisa."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

@@ -1,0 +1,147 @@
+{
+  "id": "quest_baroda",
+  "name": "The Vineyard Blight",
+  "description": "The vineyards around Baroda are dying from something in the soil.",
+  "lore": [
+    "Baroda is wine country. Rolling hills, vineyards everywhere.",
+    "The vines are turning black. Not rot, not frost.",
+    "Something in the soil moves at night."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_1_3",
+      "x": 60,
+      "y": 81,
+      "visible_if": "quest_stage >= started",
+      "label": "The Root Cellar",
+      "target_floor": "root_cellar"
+    }
+  ],
+  "quest_floors": {
+    "root_cellar": {
+      "name": "The Root Cellar",
+      "size": 18,
+      "theme": "green",
+      "difficulty": 3,
+      "description": "A wine cellar overgrown with twisted, blackened roots.",
+      "monsters": [
+        {
+          "name": "Blight Root",
+          "hp": 16,
+          "atk": 6,
+          "def": 3,
+          "xp": 12,
+          "gold": 7,
+          "art": [
+            "  \\|/",
+            "  -o-",
+            "  /|\\"
+          ]
+        },
+        {
+          "name": "Fungal Lurker",
+          "hp": 22,
+          "atk": 7,
+          "def": 4,
+          "xp": 16,
+          "gold": 9,
+          "art": [
+            "  .o.",
+            " /ooo\\",
+            "  \\o/"
+          ]
+        },
+        {
+          "name": "Barrel Mimic",
+          "hp": 30,
+          "atk": 9,
+          "def": 5,
+          "xp": 22,
+          "gold": 15,
+          "art": [
+            "  .==.",
+            " |WINE|",
+            "  '=='"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "vintner": {
+      "name": "Rosa",
+      "description": "Quest giver in The Vineyard Blight.",
+      "floor": "seg_1_3",
+      "x": 59,
+      "y": 85,
+      "location": "town",
+      "symbol": "R",
+      "art": [
+        "  .---.",
+        " ( o.o )",
+        "  \\ ~ /",
+        " [WINE]",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Rosa: *holds up a blackened vine*",
+        "Rosa: The blight is spreading from the old root cellar.",
+        "Rosa: Something's down there. I can hear it.",
+        "",
+        "  [Quest accepted: The Vineyard Blight]"
+      ],
+      "dialog_complete": [
+        "Rosa: The vines are greening up already!",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Root King",
+    "description": "Boss of The Root Cellar.",
+    "floor": "root_cellar",
+    "x": 9,
+    "y": 9,
+    "hp": 85,
+    "atk": 15,
+    "def": 6,
+    "xp": 120,
+    "gold": 90,
+    "art": [
+      "   \\\\|//   ",
+      "   /oOo\\   ",
+      "  /ooooo\\  ",
+      " |oo===oo| ",
+      "   \\|||/   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "The roots part to reveal a pulsing fungal mass.",
+      "Root King: THE VINES ARE MINE NOW.",
+      "Root King: AND I AM STILL THIRSTY."
+    ]
+  },
+  "rewards": {
+    "gold": 550,
+    "blessing": {
+      "name": "Vintner's Vigor",
+      "hp_bonus": 20,
+      "atk_bonus": 2
+    }
+  },
+  "stages": [
+    {
+      "id": "started",
+      "description": "Talk to Rosa."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Root King."
+    },
+    {
+      "id": "complete",
+      "description": "Return to Rosa."
+    }
+  ]
+}

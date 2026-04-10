@@ -5,20 +5,15 @@ import random
 from dungeon.persistence import load_custom_monsters, load_builtin_overrides
 from dungeon.floor import get_floor
 
-# Quest floor ID -> quest floor key mapping
-_QUEST_FLOOR_MAP = {
-    90000: ('bookeater_gyre', 'gyre_1'),
-    90001: ('bookeater_gyre', 'gyre_2'),
-}
-
 
 def _get_quest_floor_monsters(floor_num):
     """Get monsters defined in quest JSON for a quest floor."""
-    if floor_num not in _QUEST_FLOOR_MAP:
+    from dungeon.quests import get_quest_floor_info, load_quest
+    info = get_quest_floor_info(floor_num)
+    if info is None:
         return None
-    quest_id, floor_key = _QUEST_FLOOR_MAP[floor_num]
+    quest_id, floor_key = info
     try:
-        from dungeon.quests import load_quest
         quest = load_quest(quest_id)
         if not quest:
             return None
@@ -75,8 +70,8 @@ def get_monsters_for_floor(floor_num):
     if floor_num in MONSTERS_BY_FLOOR:
         return MONSTERS_BY_FLOOR[floor_num] + floor_customs
 
-    # Quest floors (90000+) — check for quest-defined monsters first
-    if floor_num >= 90000:
+    # Quest floors — check for quest-defined monsters first
+    if floor_num >= 90000:  # QUEST_FLOOR_BASE
         quest_monsters = _get_quest_floor_monsters(floor_num)
         if quest_monsters:
             return quest_monsters + floor_customs
@@ -183,9 +178,22 @@ def move_floor_monsters(floor_num, player_positions):
             players_info = [{'x': px, 'y': py, 'hp': 1, 'max_hp': 1, 'class': ''}
                             for px, py in player_positions]
             alive_allies = sum(1 for m in monsters if m['alive'] and m is not mob)
+
+            # Pass floor grid for builder NPCs that need construction context
+            is_builder = mob.get('builder', False)
             actions = evaluate_behavior(
                 mob, players_info, floor_num, ally_count=alive_allies,
+                floor_grid=floor if is_builder else None,
             )
+
+            # Handle construction actions separately
+            if is_builder:
+                build_results = execute_builder_actions(actions, mob, floor_num)
+                if build_results:
+                    # Reload floor if it was modified
+                    floor = get_floor(floor_num)
+                    size = len(floor)
+
             nx, ny = _execute_movement_action(
                 actions, mob, nearest_px, nearest_py, size,
             )
@@ -278,8 +286,99 @@ def _execute_movement_action(actions, mob, target_x, target_y, floor_size):
                 except ValueError:
                     pass
 
+        # Construction actions are handled by execute_builder_actions(),
+        # not here — skip them silently for movement purposes.
+
     # No movement action found — stay put
     return None, None
+
+
+def execute_builder_actions(actions, mob, floor_num):
+    """Execute construction actions from a builder NPC's behavior rules.
+
+    Called separately from movement — processes set_tile, place_room,
+    carve_corridor, post_job, and inspect actions.
+
+    Returns list of results for logging.
+    """
+    from dungeon.floor import get_floor, set_floor
+    from dungeon.gm.map_ops import set_tile, place_room, carve_corridor
+    from dungeon.persistence import save_custom_floor
+
+    grid = get_floor(floor_num)
+    size = len(grid)
+    results = []
+    modified = False
+
+    for act in actions:
+        if act.startswith('set_tile '):
+            # set_tile X Y TILE
+            parts = act.split()
+            if len(parts) == 4:
+                try:
+                    x, y, tile = int(parts[1]), int(parts[2]), int(parts[3])
+                    if 0 < x < size - 1 and 0 < y < size - 1:
+                        # Don't overwrite stairs
+                        if grid[y][x] not in (3, 4):
+                            set_tile(grid, x, y, tile)
+                            modified = True
+                            results.append(f"placed tile {tile} at ({x},{y})")
+                except ValueError:
+                    pass
+
+        elif act.startswith('place_room '):
+            # place_room X Y W H [door_side]
+            parts = act.split()
+            if len(parts) >= 5:
+                try:
+                    x, y, w, h = int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4])
+                    door_side = parts[5] if len(parts) > 5 else None
+                    if place_room(grid, x, y, w, h, door_side):
+                        modified = True
+                        results.append(f"placed {w}x{h} room at ({x},{y})")
+                except ValueError:
+                    pass
+
+        elif act.startswith('carve_corridor '):
+            # carve_corridor X1 Y1 X2 Y2
+            parts = act.split()
+            if len(parts) == 5:
+                try:
+                    x1, y1, x2, y2 = int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4])
+                    carve_corridor(grid, x1, y1, x2, y2)
+                    modified = True
+                    results.append(f"carved corridor ({x1},{y1})->({x2},{y2})")
+                except ValueError:
+                    pass
+
+        elif act.startswith('post_job '):
+            # post_job TYPE [context...]
+            parts = act.split(maxsplit=2)
+            if len(parts) >= 2:
+                from dungeon.guild.jobs import post_job
+                job_type = parts[1]
+                context = parts[2] if len(parts) > 2 else ""
+                area = [mob.get('x', 0), mob.get('y', 0),
+                        mob.get('x', 0), mob.get('y', 0)]
+                job_id = post_job(job_type, floor_num, area, context)
+                if job_id:
+                    results.append(f"posted job #{job_id}: {job_type}")
+
+        elif act == 'inspect':
+            from dungeon.guild.craftsman import inspect_dungeon_floor
+            from dungeon.guild.jobs import post_job as _post
+            findings = inspect_dungeon_floor(floor_num)
+            for f in findings:
+                _post(f['type'], f['floor'], f.get('area'),
+                      f.get('context'), f.get('priority', 0))
+            results.append(f"inspected floor {floor_num}: {len(findings)} findings")
+
+    if modified:
+        set_floor(floor_num, grid)
+        save_custom_floor(floor_num, grid)
+        results.append(f"floor {floor_num} saved")
+
+    return results
 
 
 def get_monster_at(floor_num, x, y):

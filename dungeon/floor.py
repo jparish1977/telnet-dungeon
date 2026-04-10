@@ -196,7 +196,17 @@ _generated_floors = {}
 
 
 def get_floor_size(floor_num):
-    """Floor size grows with depth. 16 -> 256 max."""
+    """Floor size grows with depth. 16 -> 256 max.
+    Quest floors (90000+) use their defined size from quest JSON."""
+    if floor_num >= 90000:
+        from dungeon.quests import get_quest_floor_info, load_quest
+        info = get_quest_floor_info(floor_num)
+        if info:
+            quest_id, floor_key = info
+            quest = load_quest(quest_id)
+            if quest:
+                qfloor = quest.get('quest_floors', {}).get(floor_key, {})
+                return qfloor.get('size', 20)
     if floor_num < len(DUNGEON_FLOORS):
         return 16
     size = 16 + floor_num * 8

@@ -97,4 +97,5 @@ Both should be useful but not mandatory — a pure Fighter can brute-force what 
 - Carnage Heart-style behavior editor for NPC/monster AI
 - Crafting system with material gathering and recipes
 - Coding skill — program companion AI with visual logic blocks
+- Plainswalker skill — wrap edges of the overworld map (east↔west, north↔south). Base tier wraps a single 128x128 segment. Advanced tier wraps the entire region grid (southernmost row↔northernmost, east col↔west col)
 - Split `gm/tools.py` (~1000 lines) into sub-modules

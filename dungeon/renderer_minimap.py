@@ -4,6 +4,7 @@ from dungeon.config import (
     CSI, DIM, RED, GREEN, YELLOW, CYAN, WHITE,
     color,
     OW_GRASS, OW_FOREST, OW_MOUNTAIN, OW_WATER, OW_ROAD, OW_TOWN, OW_DUNGEON,
+    TILE_WALL, TILE_SECRET_WALL,
 )
 from dungeon.monsters import get_floor_monsters
 
@@ -48,7 +49,7 @@ def render_minimap(dungeon, px, py, facing, radius=3, other_players=None, floor_
                 row += color(monster_positions[(mx, my)], RED)
             elif 0 <= my < len(dungeon) and 0 <= mx < len(dungeon[0]):
                 tile = dungeon[my][mx]
-                if tile == 1:
+                if tile == TILE_WALL or tile == TILE_SECRET_WALL:
                     row += color('#', DIM)
                 elif tile == 0:
                     row += color('.', WHITE)

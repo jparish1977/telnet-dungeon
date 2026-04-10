@@ -1,21 +1,147 @@
 {
   "id": "quest_hagar_shores",
-  "name": "Tales of Hagar Shores",
-  "description": "Explore the Hagar Shores region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Shipwreck Choir",
+  "description": "Singing from the lake. From a ship that sank in 1913.",
+  "lore": [
+    "Hagar Shores sits on the bluffs above Lake Michigan.",
+    "The Great Storm of 1913 sank the SS Meridian offshore.",
+    "On still nights, you can hear singing from the water."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_0_5",
+      "x": 64,
+      "y": 68,
+      "visible_if": "quest_stage >= started",
+      "label": "SS Meridian Wreck",
+      "target_floor": "ss_meridian"
+    }
+  ],
+  "quest_floors": {
+    "ss_meridian": {
+      "name": "SS Meridian Wreck",
+      "size": 18,
+      "theme": "blue",
+      "difficulty": 5,
+      "description": "Inside a sunken freighter. Water drips. Someone is singing.",
+      "monsters": [
+        {
+          "name": "Drowned Sailor",
+          "hp": 24,
+          "atk": 9,
+          "def": 4,
+          "xp": 22,
+          "gold": 12,
+          "art": [
+            "  .--.",
+            " (x  x)",
+            "  |  |"
+          ]
+        },
+        {
+          "name": "Barnacle Golem",
+          "hp": 35,
+          "atk": 7,
+          "def": 8,
+          "xp": 20,
+          "gold": 10,
+          "art": [
+            "  [ooo]",
+            " [ooooo]",
+            "  [ooo]"
+          ]
+        },
+        {
+          "name": "Hull Wraith",
+          "hp": 28,
+          "atk": 11,
+          "def": 4,
+          "xp": 25,
+          "gold": 15,
+          "art": [
+            "  ~~~~",
+            " /    \\",
+            "  ~~~~"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "diver": {
+      "name": "Chen",
+      "description": "Quest giver in The Shipwreck Choir.",
+      "floor": "seg_0_5",
+      "x": 63,
+      "y": 64,
+      "location": "town",
+      "symbol": "C",
+      "art": [
+        "  .===.",
+        " ( o.o )",
+        "  |O2 |",
+        " [DIVE]",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Chen: I found the Meridian. I wish I hadn't.",
+        "Chen: The hull is intact. That shouldn't be possible.",
+        "Chen: The singing is coming from inside the ship.",
+        "",
+        "  [Quest accepted: The Shipwreck Choir]"
+      ],
+      "dialog_complete": [
+        "Chen: The singing stopped. Rest in peace, Meridian.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "Captain Mercer",
+    "description": "Boss of SS Meridian Wreck.",
+    "floor": "ss_meridian",
+    "x": 9,
+    "y": 9,
+    "hp": 115,
+    "atk": 20,
+    "def": 7,
+    "xp": 170,
+    "gold": 120,
+    "art": [
+      "    .-=-.      ",
+      "   / O O \\     ",
+      "  |[WHEEL]|    ",
+      "   \\ === /     ",
+      "  ~~|   |~~    "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "A figure solidifies behind the ship's wheel.",
+      "Mercer: I WILL NOT ABANDON MY SHIP.",
+      "Mercer: A HUNDRED YEARS AT THE WHEEL."
+    ]
+  },
+  "rewards": {
+    "gold": 850,
+    "blessing": {
+      "name": "Mariner's Resolve",
+      "def_bonus": 4,
+      "hp_bonus": 25
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Chen."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat Captain Mercer."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Chen."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

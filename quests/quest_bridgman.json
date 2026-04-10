@@ -1,0 +1,147 @@
+{
+  "id": "quest_bridgman",
+  "name": "The Dune Walker",
+  "description": "Something is moving through the dunes at Warren Dunes.",
+  "lore": [
+    "Warren Dunes State Park draws a million visitors a year.",
+    "The rangers found massive tracks. Two legs. Eight feet tall.",
+    "The tracks lead into the back dunes."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_0_3",
+      "x": 41,
+      "y": 120,
+      "visible_if": "quest_stage >= started",
+      "label": "The Back Dunes",
+      "target_floor": "back_dunes"
+    }
+  ],
+  "quest_floors": {
+    "back_dunes": {
+      "name": "The Back Dunes",
+      "size": 20,
+      "theme": "yellow",
+      "difficulty": 3,
+      "description": "Shifting sand dunes under open sky. The wind never stops.",
+      "monsters": [
+        {
+          "name": "Sand Viper",
+          "hp": 14,
+          "atk": 7,
+          "def": 2,
+          "xp": 12,
+          "gold": 6,
+          "art": [
+            "  ~~~~",
+            " /o  o\\",
+            " ~~~~~~"
+          ]
+        },
+        {
+          "name": "Dune Beetle",
+          "hp": 20,
+          "atk": 5,
+          "def": 6,
+          "xp": 14,
+          "gold": 8,
+          "art": [
+            "  .==.",
+            " /o  o\\",
+            "  \\==/"
+          ]
+        },
+        {
+          "name": "Wind Sprite",
+          "hp": 10,
+          "atk": 9,
+          "def": 1,
+          "xp": 16,
+          "gold": 10,
+          "art": [
+            "  ~ ~",
+            " ( . )",
+            "  ~~~"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "ranger": {
+      "name": "Ranger Okafor",
+      "description": "Quest giver in The Dune Walker.",
+      "floor": "seg_0_3",
+      "x": 40,
+      "y": 124,
+      "location": "town",
+      "symbol": "R",
+      "art": [
+        "  .===.",
+        " ( o.o )",
+        "  |   |",
+        " [RANG]",
+        " [ER! ]"
+      ],
+      "dialog_start": [
+        "Ranger Okafor: These tracks don't match anything in my guide.",
+        "Ranger Okafor: The tracks lead into the back dunes.",
+        "Ranger Okafor: I need someone to follow the trail.",
+        "",
+        "  [Quest accepted: The Dune Walker]"
+      ],
+      "dialog_complete": [
+        "Ranger Okafor: A sand elemental? Not in my field guide.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Dune Walker",
+    "description": "Boss of The Back Dunes.",
+    "floor": "back_dunes",
+    "x": 10,
+    "y": 10,
+    "hp": 95,
+    "atk": 17,
+    "def": 7,
+    "xp": 140,
+    "gold": 100,
+    "art": [
+      "     .---.     ",
+      "    / O O \\    ",
+      "   |  ===  |   ",
+      "   | ::::: |   ",
+      "    \\::::::/    ",
+      "  ~~~~===~~~~  "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "The dune rises into a towering figure.",
+      "Dune Walker: I WAS HERE BEFORE THE TREES.",
+      "Dune Walker: YOU ARE A BRIEF INCONVENIENCE."
+    ]
+  },
+  "rewards": {
+    "gold": 600,
+    "blessing": {
+      "name": "Dune Strider",
+      "spd_bonus": 5
+    }
+  },
+  "stages": [
+    {
+      "id": "started",
+      "description": "Talk to Ranger Okafor."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Dune Walker."
+    },
+    {
+      "id": "complete",
+      "description": "Return to Ranger Okafor."
+    }
+  ]
+}

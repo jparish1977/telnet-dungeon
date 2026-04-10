@@ -1,21 +1,147 @@
 {
   "id": "quest_benton_east",
-  "name": "Tales of Benton East",
-  "description": "Explore the Benton East region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Fruit Market Phantom",
+  "description": "The old fruit market warehouse is alive at night.",
+  "lore": [
+    "Benton Harbor's fruit market was the largest in the world.",
+    "The old warehouse is mostly abandoned.",
+    "But the scales still work. Something is keeping inventory."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_2_6",
+      "x": 67,
+      "y": 66,
+      "visible_if": "quest_stage >= started",
+      "label": "Warehouse Basement",
+      "target_floor": "fruit_warehouse"
+    }
+  ],
+  "quest_floors": {
+    "fruit_warehouse": {
+      "name": "Warehouse Basement",
+      "size": 20,
+      "theme": "yellow",
+      "difficulty": 4,
+      "description": "Endless rows of ghostly crates. Scales tip on their own.",
+      "monsters": [
+        {
+          "name": "Crate Golem",
+          "hp": 25,
+          "atk": 7,
+          "def": 6,
+          "xp": 18,
+          "gold": 10,
+          "art": [
+            "  [===]",
+            " [=   =]",
+            "  [===]"
+          ]
+        },
+        {
+          "name": "Scale Phantom",
+          "hp": 18,
+          "atk": 9,
+          "def": 3,
+          "xp": 16,
+          "gold": 8,
+          "art": [
+            "   |",
+            " __|__",
+            "  \\_/"
+          ]
+        },
+        {
+          "name": "Rot Sprite",
+          "hp": 14,
+          "atk": 8,
+          "def": 2,
+          "xp": 14,
+          "gold": 12,
+          "art": [
+            "  .@.",
+            " (~.~)",
+            "  ~~~"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "watchman": {
+      "name": "Earl",
+      "description": "Quest giver in The Fruit Market Phantom.",
+      "floor": "seg_2_6",
+      "x": 63,
+      "y": 64,
+      "location": "town",
+      "symbol": "E",
+      "art": [
+        "  .---.",
+        " ( o.o )",
+        "  |   |",
+        " [NITE]",
+        " [WTCH]"
+      ],
+      "dialog_start": [
+        "Earl: Every night at 3 AM. The conveyor starts.",
+        "Earl: Exactly 1,847 bushels. Same number every night.",
+        "Earl: The basement door won't stay locked.",
+        "",
+        "  [Quest accepted: The Fruit Market Phantom]"
+      ],
+      "dialog_complete": [
+        "Earl: Quiet night. First one in months.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Accountant",
+    "description": "Boss of Warehouse Basement.",
+    "floor": "fruit_warehouse",
+    "x": 10,
+    "y": 10,
+    "hp": 95,
+    "atk": 17,
+    "def": 6,
+    "xp": 140,
+    "gold": 100,
+    "art": [
+      "    .---.      ",
+      "   / o o \\     ",
+      "  | |LED| |    ",
+      "  | |GER| |    ",
+      "   1,847       "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "A figure sits at a desk, pen scratching.",
+      "Accountant: 1,847 BUSHELS. MISSING SINCE 1929.",
+      "Accountant: YOU ARE NOT IN MY LEDGER."
+    ]
+  },
+  "rewards": {
+    "gold": 700,
+    "blessing": {
+      "name": "Balanced Books",
+      "mp_bonus": 20,
+      "atk_bonus": 2
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Earl."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Accountant."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Earl."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

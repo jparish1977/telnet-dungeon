@@ -1,21 +1,147 @@
 {
   "id": "quest_berrien_east",
-  "name": "Tales of Berrien East",
-  "description": "Explore the Berrien East region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Windmill Ghost",
+  "description": "An old Dutch windmill is grinding grain by itself at midnight.",
+  "lore": [
+    "The old Huss farm had a windmill built by Dutch settlers.",
+    "It hasn't worked in fifty years. Until last month.",
+    "Fresh flour on the millstone every morning."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_5_3",
+      "x": 66,
+      "y": 66,
+      "visible_if": "quest_stage >= started",
+      "label": "Windmill Cellar",
+      "target_floor": "windmill_cellar"
+    }
+  ],
+  "quest_floors": {
+    "windmill_cellar": {
+      "name": "Windmill Cellar",
+      "size": 16,
+      "theme": "gray",
+      "difficulty": 3,
+      "description": "A stone cellar beneath the windmill. Flour dust fills the air.",
+      "monsters": [
+        {
+          "name": "Flour Phantom",
+          "hp": 14,
+          "atk": 6,
+          "def": 2,
+          "xp": 10,
+          "gold": 5,
+          "art": [
+            "  ...",
+            " (. .)",
+            "  ..."
+          ]
+        },
+        {
+          "name": "Gear Golem",
+          "hp": 24,
+          "atk": 7,
+          "def": 6,
+          "xp": 18,
+          "gold": 10,
+          "art": [
+            "  .=.",
+            " /ooo\\",
+            "  \\o/"
+          ]
+        },
+        {
+          "name": "Mill Rat",
+          "hp": 10,
+          "atk": 8,
+          "def": 1,
+          "xp": 8,
+          "gold": 4,
+          "art": [
+            "  (\\.)",
+            " (~.~)",
+            "  ~~~"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "farmer_huss": {
+      "name": "Old Man Huss",
+      "description": "Quest giver in The Windmill Ghost.",
+      "floor": "seg_5_3",
+      "x": 63,
+      "y": 62,
+      "location": "town",
+      "symbol": "H",
+      "art": [
+        "  .---.",
+        " ( >.< )",
+        "  \\   /",
+        " [HUSS]",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Huss: That's MY windmill. MY family built it.",
+        "Huss: Whatever's grinding grain at midnight don't pay rent.",
+        "Huss: There's a cellar entrance around back.",
+        "",
+        "  [Quest accepted: The Windmill Ghost]"
+      ],
+      "dialog_complete": [
+        "Huss: Clean. Good. Maybe I'll fix her up proper.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Miller",
+    "description": "Boss of Windmill Cellar.",
+    "floor": "windmill_cellar",
+    "x": 8,
+    "y": 8,
+    "hp": 80,
+    "atk": 15,
+    "def": 5,
+    "xp": 110,
+    "gold": 85,
+    "art": [
+      "    .---.      ",
+      "   / o o \\     ",
+      "  |[FLOUR]|    ",
+      "   \\     /     ",
+      "  GRIST MILL   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "Flour cascades from the ceiling.",
+      "Miller: THE GRAIN MUST BE GROUND.",
+      "Miller: I WILL NOT BREAK MY WORD."
+    ]
+  },
+  "rewards": {
+    "gold": 550,
+    "blessing": {
+      "name": "Miller's Endurance",
+      "def_bonus": 3,
+      "hp_bonus": 15
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Old Man Huss."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Miller."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Old Man Huss."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

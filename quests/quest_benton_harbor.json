@@ -1,21 +1,167 @@
 {
   "id": "quest_benton_harbor",
-  "name": "Tales of Benton Harbor",
-  "description": "Explore the Benton Harbor region.",
-  "entrances": [],
-  "quest_floors": {},
-  "npcs": {},
+  "name": "The Spin Cycle",
+  "description": "The old MaelstromCo appliance plant is running again. Every machine, all at once.",
+  "lore": [
+    "Benton Harbor was the appliance capital of the world.",
+    "MaelstromCo built washers, dryers, dishwashers \u2014 you name it.",
+    "The plant closed ten years ago. Thousands of jobs gone.",
+    "Last week the power grid spiked. The old plant drew 2 megawatts.",
+    "Nobody's inside. But every machine on the floor is running.",
+    "The spin cycle never stops."
+  ],
+  "map_mods": [],
+  "entrances": [
+    {
+      "floor": "seg_1_6",
+      "x": 124,
+      "y": 12,
+      "visible_if": "quest_stage >= started",
+      "label": "MaelstromCo Prototype Lab",
+      "target_floor": "maelstromco_plant"
+    }
+  ],
+  "quest_floors": {
+    "maelstromco_plant": {
+      "name": "MaelstromCo Prototype Lab",
+      "size": 22,
+      "theme": "white",
+      "difficulty": 4,
+      "description": "Assembly lines run unmanned. Washers spin. Dryers tumble. The noise is deafening.",
+      "monsters": [
+        {
+          "name": "Rogue Washer",
+          "hp": 28,
+          "atk": 8,
+          "def": 6,
+          "xp": 20,
+          "gold": 12,
+          "art": [
+            "  .===.",
+            " |     |",
+            " | @@@ |",
+            " |     |",
+            "  '==='"
+          ]
+        },
+        {
+          "name": "Lint Phantom",
+          "hp": 16,
+          "atk": 7,
+          "def": 2,
+          "xp": 14,
+          "gold": 8,
+          "art": [
+            "  ~~~",
+            " ~~~~~",
+            " ~~~~~",
+            "  ~~~"
+          ]
+        },
+        {
+          "name": "Assembly Arm",
+          "hp": 24,
+          "atk": 10,
+          "def": 4,
+          "xp": 22,
+          "gold": 14,
+          "art": [
+            "  |",
+            "  |--.",
+            " /|  |",
+            "  |  o"
+          ]
+        }
+      ]
+    }
+  },
+  "npcs": {
+    "larry": {
+      "name": "Larry",
+      "description": "Quest giver in The Spin Cycle.",
+      "floor": "seg_1_6",
+      "x": 124,
+      "y": 17,
+      "location": "town",
+      "symbol": "L",
+      "art": [
+        "  .---.",
+        " ( o.o )",
+        "  \\   /",
+        " [ENG ]--.",
+        "  |  |",
+        "  +--+"
+      ],
+      "dialog_start": [
+        "Larry: I was a line engineer at MaelstromCo for twenty-two years.",
+        "Larry: *waves his one hand*",
+        "Larry: Don't ask about the other one. Dynamite fishing accident.",
+        "Larry: Anyway \u2014 the plant's been dead since they moved to Mexico.",
+        "Larry: But I drove past last night. Every light was on.",
+        "Larry: Machines running. Nobody at the controls.",
+        "Larry: Something in the sub-basement. The old prototype lab.",
+        "",
+        "  [Quest accepted: The Spin Cycle]"
+      ],
+      "dialog_complete": [
+        "Larry: Plant's dark again. Power company's relieved.",
+        "Larry: *scratches chin with his one hand*",
+        "Larry: Twenty-two years on that line and I never saw anything like that.",
+        "Larry: Here \u2014 my old foreman's badge. Might come in handy.",
+        "  [Quest complete!]"
+      ]
+    }
+  },
+  "boss": {
+    "name": "The Prototype",
+    "description": "Boss of MaelstromCo Prototype Lab.",
+    "floor": "maelstromco_plant",
+    "x": 11,
+    "y": 11,
+    "hp": 100,
+    "atk": 19,
+    "def": 6,
+    "xp": 150,
+    "gold": 110,
+    "art": [
+      "  .==========.  ",
+      " |  MAELSTROM | ",
+      " | |  @@@@  | | ",
+      " | | @    @ | | ",
+      " | |  @@@@  | | ",
+      " |  CYCLE:99 | ",
+      "  '=========='  ",
+      "  ~SPIN~SPIN~   "
+    ],
+    "defeat_flag": "boss_defeated",
+    "dialog": [
+      "A washer the size of a car roars to life.",
+      "Its drum spins impossibly fast. The room shakes.",
+      "Prototype: PERMANENT PRESS.",
+      "Prototype: HEAVY DUTY.",
+      "Prototype: THE CYCLE NEVER ENDS."
+    ]
+  },
+  "rewards": {
+    "gold": 750,
+    "blessing": {
+      "name": "Iron Will",
+      "def_bonus": 4,
+      "hp_bonus": 20
+    }
+  },
   "stages": [
     {
       "id": "started",
-      "description": "Begin exploring."
+      "description": "Talk to Larry."
+    },
+    {
+      "id": "boss_defeated",
+      "description": "Defeat The Prototype."
     },
     {
       "id": "complete",
-      "description": "Region explored."
+      "description": "Return to Larry."
     }
-  ],
-  "rewards": {
-    "gold": 500
-  }
+  ]
 }

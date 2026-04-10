@@ -100,6 +100,115 @@ class LuaBackend(ScriptingBackend):
         # Floor info
         lua.execute(f'floor_num = {game_state.get("floor_num", 0)}')
 
+        # ── Construction context (for builder NPCs) ──────────────
+        floor_grid = game_state.get('floor_grid')
+        if floor_grid:
+            floor_size = len(floor_grid)
+            lua.execute(f'floor_size = {floor_size}')
+            mx, my = mob.get('x', 0), mob.get('y', 0)
+            current_tile = floor_grid[my][mx] if 0 <= my < floor_size and 0 <= mx < floor_size else -1
+            lua.execute(f'current_tile = {current_tile}')
+
+            # Tile-at helper: tile_at(x, y) returns tile code
+            # Store grid as flat string for Lua access
+            flat = ','.join(str(floor_grid[y][x])
+                           for y in range(floor_size) for x in range(floor_size))
+            lua.execute(f'_grid_flat = {{{flat}}}')
+            lua.execute(f'_grid_size = {floor_size}')
+            lua.execute('''
+                function tile_at(x, y)
+                    if x < 0 or x >= _grid_size or y < 0 or y >= _grid_size then return -1 end
+                    return _grid_flat[y * _grid_size + x + 1]
+                end
+            ''')
+
+            # Scan surroundings: count of each tile type within radius
+            radius = 5
+            tile_counts = {}
+            features_nearby = []
+            for dy in range(-radius, radius + 1):
+                for dx in range(-radius, radius + 1):
+                    sx, sy = mx + dx, my + dy
+                    if 0 <= sx < floor_size and 0 <= sy < floor_size:
+                        t = floor_grid[sy][sx]
+                        tile_counts[t] = tile_counts.get(t, 0) + 1
+                        if t in (5, 6) and (dx != 0 or dy != 0):
+                            features_nearby.append((t, sx, sy))
+
+            lua.execute(f'nearby_walls = {tile_counts.get(1, 0)}')
+            lua.execute(f'nearby_floors = {tile_counts.get(0, 0)}')
+            lua.execute(f'nearby_doors = {tile_counts.get(2, 0)}')
+            lua.execute(f'nearby_chests = {tile_counts.get(5, 0)}')
+            lua.execute(f'nearby_fountains = {tile_counts.get(6, 0)}')
+            lua.execute(f'nearby_features = {len(features_nearby)}')
+
+            # Room analysis: how many open tiles are connected to current position
+            if current_tile in (0, 2, 5, 6):
+                visited = set()
+                stack = [(mx, my)]
+                room_size = 0
+                while stack and room_size < 200:
+                    cx, cy = stack.pop()
+                    if (cx, cy) in visited:
+                        continue
+                    if not (0 <= cx < floor_size and 0 <= cy < floor_size):
+                        continue
+                    if floor_grid[cy][cx] in (1,):
+                        continue
+                    visited.add((cx, cy))
+                    room_size += 1
+                    stack.extend([(cx+1, cy), (cx-1, cy), (cx, cy+1), (cx, cy-1)])
+                lua.execute(f'room_size = {room_size}')
+            else:
+                lua.execute('room_size = 0')
+
+            # Corridor detection: am I in a narrow passage?
+            h_walls = (0 <= mx < floor_size and 0 < my < floor_size - 1
+                       and floor_grid[my-1][mx] == 1 and floor_grid[my+1][mx] == 1)
+            v_walls = (0 < mx < floor_size - 1 and 0 <= my < floor_size
+                       and floor_grid[my][mx-1] == 1 and floor_grid[my][mx+1] == 1)
+            lua.execute(f'in_corridor = {"true" if (h_walls or v_walls) and current_tile in (0, 2) else "false"}')
+
+            # Count corridor length in current direction
+            corridor_len = 0
+            if h_walls:
+                for d in (-1, 1):
+                    cx = mx + d
+                    while 0 < cx < floor_size - 1 and floor_grid[my][cx] != 1:
+                        corridor_len += 1
+                        cx += d
+            elif v_walls:
+                for d in (-1, 1):
+                    cy = my + d
+                    while 0 < cy < floor_size - 1 and floor_grid[cy][mx] != 1:
+                        corridor_len += 1
+                        cy += d
+            lua.execute(f'corridor_length = {corridor_len}')
+
+            # Tile name helpers
+            lua.execute('''
+                function nearby_tile(tile_code)
+                    local count = 0
+                    for dy = -5, 5 do
+                        for dx = -5, 5 do
+                            if tile_at(mob.x + dx, mob.y + dy) == tile_code then
+                                count = count + 1
+                            end
+                        end
+                    end
+                    return count
+                end
+            ''')
+
+            lua.execute('''
+                function room_has_feature(tile_code)
+                    return nearby_tile(tile_code) > 0
+                end
+            ''')
+
+        # Guild job queue access
+        lua.execute(f'pending_jobs = {game_state.get("pending_jobs", 0)}')
+
         # Action accumulator
         lua.execute('_actions = {}')
         lua.execute('''
@@ -168,6 +277,9 @@ class LuaBackend(ScriptingBackend):
             'has_flag quest_done' -> 'has_flag("quest_done")'
             'random 30' -> 'random(30)'
             'player_class MAGE' -> 'player_class == "MAGE"'
+            'tile_at 5 3 == 1' -> 'tile_at(5, 3) == 1'
+            'room_has_feature 5' -> 'room_has_feature(5)'
+            'nearby_tile 5 > 3' -> 'nearby_tile(5) > 3'
         """
         cond = cond.strip()
 
@@ -182,6 +294,25 @@ class LuaBackend(ScriptingBackend):
         if cond.startswith('player_class '):
             cls = cond[13:].strip()
             return f'player_class == "{cls}"'
+
+        # tile_at X Y == TILE
+        import re
+        m = re.match(r'tile_at\s+(\d+)\s+(\d+)\s*(.*)', cond)
+        if m:
+            return f'tile_at({m.group(1)}, {m.group(2)}) {m.group(3)}'
+
+        # room_has_feature TILE
+        m = re.match(r'room_has_feature\s+(\d+)(.*)', cond)
+        if m:
+            rest = m.group(2).strip()
+            if rest:
+                return f'room_has_feature({m.group(1)}) {rest}'
+            return f'room_has_feature({m.group(1)})'
+
+        # nearby_tile TILE > N
+        m = re.match(r'nearby_tile\s+(\d+)\s*(.*)', cond)
+        if m:
+            return f'nearby_tile({m.group(1)}) {m.group(2)}'
 
         return cond
 
