@@ -6,3 +6,6 @@ web/node_modules/
 web/dist/
 *.ppm
 .tile_cache/
+# A documentation indexer's per-checkout settings, kept outside the repository
+# and linked in where it is used.
+.projectbook
